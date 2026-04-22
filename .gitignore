@@ -1,0 +1,17 @@
+# File e directory generate dalla build
+.gradle/
+build/
+local.properties
+
+# File dell'SDK Android
+*.iml
+.DS_Store
+
+# Chiavi e segreti - NON committare mai questi file
+local.properties
+
+# File di Android Studio
+.idea/
+*.iws
+*.iml
+captures/

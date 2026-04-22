@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Permesso di rete per chiamare le API di Gemini -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:allowBackup="true"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.SimpleTranscriberApp">
+
+        <!--
+            MainActivity configurata con tema trasparente e senza barra del titolo.
+            - android:theme: usa il tema translucent definito in themes.xml
+            - android:exported="true": richiesto per ricevere intent dall'esterno
+            - android:excludeFromRecents="true": l'Activity non compare nei recenti
+            - android:taskAffinity="": crea un task separato, non si mescola con l'app condividente
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SimpleTranscriberApp.Translucent"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:launchMode="singleTask">
+
+            <!--
+                Intent filter per catturare file audio condivisi.
+                Supporta sia audio/* (formati standard come m4a, mp3, wav)
+                che application/ogg (nota vocale di WhatsApp su alcuni dispositivi).
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/ogg" />
+            </intent-filter>
+
+        </activity>
+    </application>
+
+</manifest>

@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">SimpleTranscriber</string>
+    <string name="title_transcribing">Transcribing...</string>
+    <string name="info_gemini">Powered by Gemini AI</string>
+    <string name="btn_copy">Copy to clipboard</string>
+    <string name="btn_close">Close</string>
+    <string name="btn_start">Start Transcription</string>
+    <string name="error_title">An error occurred</string>
+    <string name="label_api_key">Gemini API Key</string>
+    <string name="placeholder_api_key">Paste your API key here...</string>
+    <string name="label_language">Target Language</string>
+    <string name="msg_api_key_required">Please enter your Gemini API Key. You can get one at aistudio.google.com</string>
+    <string name="toast_copied">Copied to clipboard!</string>
+    <string name="msg_success_copy">Transcription copied!</string>
+</resources>
