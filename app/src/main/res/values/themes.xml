@@ -10,22 +10,20 @@
         dipendenze esterne (es. com.google.android.material).
         Il look visivo reale è interamente gestito da Compose + MaterialTheme.
     -->
-    <style name="Theme.SimpleTranscriberApp" parent="android:Theme.Material.Light.NoActionBar" />
-
-    <!--
-        Tema trasparente per la MainActivity.
-        - windowIsTranslucent: rende l'Activity trasparente (si vede l'app sotto)
-        - windowBackground: sfondo completamente trasparente
-        - windowNoTitle: nasconde la ActionBar/TitleBar di sistema
-        - android:windowIsFloating: evita che l'activity occupi tutto lo schermo nel task switcher
-        La Card di Compose (con sfondo semi-trasparente) si occuperà del look visivo.
-    -->
-    <style name="Theme.SimpleTranscriberApp.Translucent" parent="Theme.SimpleTranscriberApp">
-        <item name="android:windowIsTranslucent">true</item>
+    <!-- Base app theme (Dark) -->
+    <!-- Base app theme (Translucent Overlay) -->
+    <style name="Theme.SimpleTranscriberApp" parent="android:Theme.Material.NoActionBar">
+        <!-- Make the window background transparent -->
         <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowIsFloating">false</item>
         <item name="android:windowContentOverlay">@null</item>
-        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowShowWallpaper">false</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
 </resources>

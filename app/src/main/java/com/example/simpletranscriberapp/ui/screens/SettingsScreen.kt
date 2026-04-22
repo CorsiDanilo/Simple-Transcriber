@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.simpletranscriberapp.data.UserSettings
+import com.example.simpletranscriberapp.engine.EngineType
 import com.example.simpletranscriberapp.ui.theme.DarkGray
 import com.example.simpletranscriberapp.ui.theme.Gold
 import kotlin.math.roundToInt
@@ -31,12 +32,16 @@ import kotlin.math.roundToInt
 @Composable
 fun SettingsScreen(
     settings: UserSettings,
+    isAICoreAvailable: Boolean,
+    selectedModelName: String,
     onNavigateBack: () -> Unit,
     onUpdateLanguage: (String) -> Unit,
     onUpdateOpacity: (Float) -> Unit,
     onUpdateTheme: (String) -> Unit,
     onUpdateProximity: (Boolean) -> Unit,
-    onUpdateDefaultAction: (String) -> Unit
+    onUpdateDefaultAction: (String) -> Unit,
+    onUpdateTranscriptionEngine: (String) -> Unit,
+    onNavigateToModelManager: () -> Unit
 ) {
     Scaffold(
         topBar = {
@@ -56,81 +61,130 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Sezione Premium
-            SettingsCard {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.WorkspacePremium, null, tint = Gold)
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("You are a premium user", fontWeight = FontWeight.Bold)
-                        Text("Thank you for using Transcriber for WhatsApp!", fontSize = 12.sp, color = Color.Gray)
-                    }
-                }
-            }
+            // ── Transcription Engine ──
+            SettingSection("Transcription Engine") {
+                val currentEngine = EngineType.fromKey(settings.transcriptionEngine)
 
-            // Social
-            SettingSection("Social") {
-                SettingItem(Icons.Default.CenterFocusStrong, "Follow me!", "Follow me on Instagram to stay updated about upcoming projects, collaborations, app updates and more!")
-            }
-
-            // Language
-            SettingSection("Language") {
-                SettingItem(Icons.Default.Language, "Language in use is", settings.language, onClick = { onUpdateLanguage("Italiano") })
-                SettingToggle("Choose language before every conversation", true, {})
-            }
-
-            // UI
-            SettingSection("UI") {
-                SettingSlider(
-                    icon = Icons.Default.Opacity,
-                    title = "Opacity",
-                    value = settings.opacity,
-                    onValueChange = onUpdateOpacity
+                // Cloud
+                EngineOption(
+                    icon = Icons.Default.Cloud,
+                    title = "Cloud (Gemini API)",
+                    subtitle = "Requires API Key & Internet",
+                    isSelected = currentEngine == EngineType.CLOUD,
+                    isEnabled = true,
+                    onClick = { onUpdateTranscriptionEngine(EngineType.CLOUD.key) }
                 )
-                Divider(color = Color.DarkGray, thickness = 0.5.dp)
-                SettingItem(Icons.Default.Palette, "Theme", settings.theme, onClick = { onUpdateTheme("System") })
-            }
 
-            // Voice Playback
-            SettingSection("Voice message playback") {
-                SettingItem(Icons.Default.FastForward, "Min speed", "0.75X")
-                SettingItem(Icons.Default.FastForward, "Max speed", "1.75X")
-                Divider(color = Color.DarkGray, thickness = 0.5.dp)
-                SettingToggle("Enable proximity sensor", settings.enableProximity, onUpdateProximity)
-            }
+                HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
 
-            // Actions
-            SettingSection("Actions") {
-                val actions = listOf("Show actions", "Transcribe", "Play voice message in incognito")
-                actions.forEach { action ->
-                    SettingRadio(action, selected = settings.defaultAction == action) {
-                        onUpdateDefaultAction(action)
+                // AICore
+                EngineOption(
+                    icon = Icons.Default.Memory,
+                    title = "AICore (On-Device)",
+                    subtitle = if (isAICoreAvailable) {
+                        "System-managed, no setup needed"
+                    } else {
+                        "⚠️ Not available on this device"
+                    },
+                    isSelected = currentEngine == EngineType.AICORE,
+                    isEnabled = isAICoreAvailable,
+                    onClick = { onUpdateTranscriptionEngine(EngineType.AICORE.key) }
+                )
+
+                HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
+
+                // LiteRT
+                EngineOption(
+                    icon = Icons.Default.PhoneAndroid,
+                    title = "Local Model (LiteRT-LM)",
+                    subtitle = if (selectedModelName.isNotBlank()) {
+                        "Selected: $selectedModelName"
+                    } else {
+                        "Full control, works offline"
+                    },
+                    isSelected = currentEngine == EngineType.LITERT,
+                    isEnabled = true,
+                    onClick = { onUpdateTranscriptionEngine(EngineType.LITERT.key) }
+                )
+
+                // Link al Model Manager (visibile solo se LiteRT è selezionato)
+                if (currentEngine == EngineType.LITERT) {
+                    Spacer(Modifier.height(4.dp))
+                    TextButton(
+                        onClick = onNavigateToModelManager,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            Icons.Default.Settings,
+                            null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Manage Models")
+                        Spacer(Modifier.weight(1f))
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            null,
+                            modifier = Modifier.size(16.dp)
+                        )
                     }
                 }
             }
+        }
+    }
+}
 
-            // Apps you might like
-            SettingSection("Apps you might like") {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
-                ) {
-                    AppIconPlaceholder(Color(0xFFE3F2FD))
-                    AppIconPlaceholder(Color(0xFFFCE4EC))
-                    AppIconPlaceholder(Color(0xFFFFF3E0))
-                    AppIconPlaceholder(Color(0xFFE8F5E9))
-                }
+@Composable
+private fun EngineOption(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    isSelected: Boolean,
+    isEnabled: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (isEnabled) Modifier.noRippleClickable { onClick() }
+                else Modifier
+            )
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon, null,
+            modifier = Modifier.size(24.dp),
+            tint = when {
+                isSelected -> Gold
+                !isEnabled -> Color.Gray.copy(alpha = 0.5f)
+                else -> Color.LightGray
             }
-
-            // Footer
+        )
+        Spacer(Modifier.width(16.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "Made in Italy with ♥",
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                textAlign = TextAlign.Center,
+                title,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isEnabled) Color.Unspecified else Color.Gray.copy(alpha = 0.5f)
+            )
+            Text(
+                subtitle,
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = if (isEnabled) Color.Gray else Color.Gray.copy(alpha = 0.4f)
             )
         }
+        RadioButton(
+            selected = isSelected,
+            onClick = if (isEnabled) onClick else null,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Gold,
+                unselectedColor = if (isEnabled) Color.Gray else Color.Gray.copy(alpha = 0.3f)
+            ),
+            enabled = isEnabled
+        )
     }
 }
 

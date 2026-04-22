@@ -75,5 +75,13 @@ dependencies {
     // Google Generative AI SDK (Gemini)
     implementation(libs.generativeai)
 
+    // On-device AI: ML Kit GenAI Speech Recognition (AICore)
+    // TODO: Add back when upgrading Kotlin to 2.2+
+    // implementation(libs.mlkit.genai.speech)
+
+    // On-device AI: LiteRT runtime
+    implementation(libs.litert)
+    implementation("com.google.ai.edge.litertlm:litertlm-android:+")
+
     debugImplementation(libs.androidx.ui.tooling)
 }

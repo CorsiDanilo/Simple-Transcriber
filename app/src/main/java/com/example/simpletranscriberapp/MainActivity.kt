@@ -11,8 +11,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -21,6 +24,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.simpletranscriberapp.ui.TranscriberScreen
 import com.example.simpletranscriberapp.ui.screens.HistoryScreen
+import com.example.simpletranscriberapp.ui.screens.ModelManagerScreen
 import com.example.simpletranscriberapp.ui.screens.SettingsScreen
 import com.example.simpletranscriberapp.ui.theme.SimpleTranscriberAppTheme
 
@@ -44,6 +48,17 @@ class MainActivity : ComponentActivity() {
             val settings by mainViewModel.settings.collectAsState()
             val history by mainViewModel.historyItems.collectAsState()
             val transcriberState by transcriberViewModel.uiState.collectAsState()
+            val modelsWithStatus by mainViewModel.modelsWithStatus.collectAsState()
+            val catalogLoading by mainViewModel.catalogLoading.collectAsState()
+            val catalogError by mainViewModel.catalogError.collectAsState()
+
+            // Calcola il nome e lo stato del modello selezionato
+            val selectedModelInfo = remember(modelsWithStatus, settings.selectedModelId) {
+                modelsWithStatus.find { it.info.id == settings.selectedModelId }
+            }
+            val selectedModelName = selectedModelInfo?.info?.displayName ?: ""
+            val isModelDownloaded = selectedModelInfo?.status == com.example.simpletranscriberapp.data.ModelStatus.Selected || 
+                                    selectedModelInfo?.status == com.example.simpletranscriberapp.data.ModelStatus.Downloaded
 
             SimpleTranscriberAppTheme {
                 if (isShareFlow) {
@@ -58,17 +73,28 @@ class MainActivity : ComponentActivity() {
                         uiState = transcriberState,
                         currentApiKey = settings.apiKey,
                         currentLanguage = settings.language,
+                        currentEngine = settings.transcriptionEngine,
+                        selectedModelName = selectedModelName,
+                        isModelDownloaded = isModelDownloaded,
+                        isAICoreAvailable = mainViewModel.isAICoreAvailable,
                         onDismiss = { finish() },
                         onCopyToClipboard = { text -> copyToClipboard(text) },
                         onUpdateApiKey = { mainViewModel.updateApiKey(it) },
                         onUpdateLanguage = { mainViewModel.updateLanguage(it) },
+                        onEngineChange = { 
+                            mainViewModel.updateTranscriptionEngine(it)
+                            transcriberViewModel.clearError()
+                        },
                         onStartTranscription = { transcriberViewModel.startTranscription(contentResolver) }
                     )
                 } else {
                     val navController = rememberNavController()
 
-                    // Layer principale per navigazione History/Settings
-                    Box(modifier = Modifier.fillMaxSize().graphicsLayer { alpha = settings.opacity }) {
+                    // Layer principale per navigazione History/Settings/ModelManager
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        if (!isShareFlow) {
+                            Spacer(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background))
+                        }
                         NavHost(navController = navController, startDestination = "history") {
                             composable("history") {
                                 HistoryScreen(
@@ -80,12 +106,31 @@ class MainActivity : ComponentActivity() {
                             composable("settings") {
                                 SettingsScreen(
                                     settings = settings,
+                                    isAICoreAvailable = mainViewModel.isAICoreAvailable,
+                                    selectedModelName = selectedModelName,
                                     onNavigateBack = { navController.popBackStack() },
                                     onUpdateLanguage = { mainViewModel.updateLanguage(it) },
                                     onUpdateOpacity = { mainViewModel.updateOpacity(it) },
                                     onUpdateTheme = { mainViewModel.updateTheme(it) },
                                     onUpdateProximity = { mainViewModel.updateProximity(it) },
-                                    onUpdateDefaultAction = { mainViewModel.updateDefaultAction(it) }
+                                    onUpdateDefaultAction = { mainViewModel.updateDefaultAction(it) },
+                                    onUpdateTranscriptionEngine = { mainViewModel.updateTranscriptionEngine(it) },
+                                    onNavigateToModelManager = { navController.navigate("model_manager") }
+                                )
+                            }
+                            composable("model_manager") {
+                                ModelManagerScreen(
+                                    models = modelsWithStatus,
+                                    availableStorage = mainViewModel.modelRepository.getFormattedAvailableStorage(),
+                                    deviceRamMb = mainViewModel.modelRepository.getDeviceRamMb(),
+                                    isLoading = catalogLoading,
+                                    errorMessage = catalogError,
+                                    onNavigateBack = { navController.popBackStack() },
+                                    onRefreshCatalog = { mainViewModel.refreshCatalog() },
+                                    onDownloadModel = { mainViewModel.downloadModel(it) },
+                                    onCancelDownload = { mainViewModel.cancelDownload(it) },
+                                    onDeleteModel = { mainViewModel.deleteModel(it) },
+                                    onSelectModel = { mainViewModel.selectModel(it) }
                                 )
                             }
                         }

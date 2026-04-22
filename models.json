@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "id": "gemma-4-e2b",
+      "displayName": "Gemma 4 E2B",
+      "description": "2B parameters • Fast • Best for real-time transcription",
+      "sizeBytes": 2252341248,
+      "downloadUrl": "https://huggingface.co/litert-community/gemma-4-e2b/resolve/main/gemma-4-e2b.tflite",
+      "fileName": "gemma-4-e2b.tflite",
+      "minRamMb": 4096,
+      "supportedLanguages": ["en", "it", "es", "fr", "de", "pt", "ru", "zh", "ja", "ar"]
+    },
+    {
+      "id": "gemma-4-e4b",
+      "displayName": "Gemma 4 E4B",
+      "description": "4B parameters • Higher accuracy • Requires more RAM",
+      "sizeBytes": 4085252096,
+      "downloadUrl": "https://huggingface.co/litert-community/gemma-4-e4b/resolve/main/gemma-4-e4b.tflite",
+      "fileName": "gemma-4-e4b.tflite",
+      "minRamMb": 6144,
+      "supportedLanguages": ["en", "it", "es", "fr", "de", "pt", "ru", "zh", "ja", "ar"]
+    }
+  ]
+}
