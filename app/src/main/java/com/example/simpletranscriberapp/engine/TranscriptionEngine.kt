@@ -44,6 +44,11 @@ interface TranscriptionEngine {
      * Nome visualizzabile dell'engine (es. "Cloud (Gemini)", "AICore", "Gemma 4 E2B")
      */
     fun displayName(): String
+
+    /**
+     * Rifinisce il testo trascritto per correggere errori grammaticali o di punteggiatura.
+     */
+    suspend fun refineText(text: String, language: String): String = text
 }
 
 /**

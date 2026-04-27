@@ -88,7 +88,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 val engineType = EngineType.fromKey(settings.transcriptionEngine)
 
                 // Crea l'engine appropriato
-                val engine = createEngine(engineType, settings.selectedModelId)
+                val engine = createEngine(engineType, settings.selectedModelId, settings.apiKey)
 
                 // Leggi l'audio
                 val audioBytes = withContext(Dispatchers.IO) {
@@ -100,7 +100,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 val result = engine.transcribe(
                     audioBytes = audioBytes,
                     mimeType = mimeType,
-                    language = _selectedLanguage.value
+                    language = settings.language
                 ) { progressMessage ->
                     _uiState.value = TranscriberUiState.Loading(progressMessage)
                 }
@@ -108,7 +108,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 // Gestisci risultato
                 when (result) {
                     is TranscriptionResult.Success -> {
-                        _uiState.value = TranscriberUiState.Success(result.text)
+                        _uiState.value = TranscriberUiState.Loading("Refining text...")
+                        val refinedText = withContext(Dispatchers.IO) {
+                            engine.refineText(result.text, settings.language)
+                        }
+                        _uiState.value = TranscriberUiState.Success(refinedText)
                     }
                     is TranscriptionResult.Error -> {
                         _uiState.value = TranscriberUiState.Error(result.message)
@@ -127,10 +131,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
      */
     private suspend fun createEngine(
         engineType: EngineType,
-        selectedModelId: String
+        selectedModelId: String,
+        apiKey: String
     ): TranscriptionEngine {
         return when (engineType) {
-            EngineType.CLOUD -> CloudEngine(_apiKey.value)
+            EngineType.CLOUD -> CloudEngine(apiKey)
             EngineType.AICORE -> AICoreEngine(getApplication())
             EngineType.LITERT -> {
                 // Recupera il catalogo per trovare il path del modello

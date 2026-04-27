@@ -50,4 +50,21 @@ class CloudEngine(private val apiKey: String) : TranscriptionEngine {
     override fun isAvailable(): Boolean = apiKey.isNotBlank()
 
     override fun displayName(): String = "Cloud (Gemini)"
+
+    override suspend fun refineText(text: String, language: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        if (apiKey.isBlank()) return@withContext text
+        try {
+            val generativeModel = GenerativeModel(
+                modelName = "gemini-2.5-flash",
+                apiKey = apiKey
+            )
+            val response = generativeModel.generateContent(
+                "Fix the punctuation, syntax, and grammatical errors of the following transcribed text, keeping the original meaning intact. Respond ONLY with the corrected text in $language language:\n\n$text"
+            )
+            val refined = response.text?.trim()
+            if (!refined.isNullOrBlank()) refined else text
+        } catch (e: Exception) {
+            text
+        }
+    }
 }

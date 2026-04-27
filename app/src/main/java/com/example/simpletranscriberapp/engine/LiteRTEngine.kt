@@ -209,4 +209,26 @@ class LiteRTEngine(
     }
 
     override fun displayName(): String = modelDisplayName
+
+    override suspend fun refineText(text: String, language: String): String = withContext(Dispatchers.Default) {
+        try {
+            val litertEngine = getOrInitEngine { }
+            litertEngine.createConversation().use { conversation ->
+                val contents = listOf(
+                    Content.Text("Fix the punctuation, syntax, and grammatical errors of the following transcribed text, keeping the original meaning intact. Respond ONLY with the corrected text in $language language:\n\n$text")
+                )
+                val message = Message.user(Contents.of(contents))
+                val response = conversation.sendMessage(message)
+                
+                val resultText = response.contents.contents
+                    .filterIsInstance<Content.Text>()
+                    .joinToString("") { it.text }
+                
+                val refined = resultText.trim()
+                if (refined.isNotBlank()) refined else text
+            }
+        } catch (e: Exception) {
+            text
+        }
+    }
 }
