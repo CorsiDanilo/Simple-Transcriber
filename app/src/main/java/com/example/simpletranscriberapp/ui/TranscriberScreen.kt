@@ -71,7 +71,7 @@ fun TranscriberScreen(
                 // Header
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(Icons.Default.Translate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text("SimpleTranscriber", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                    Text("Transcription", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
                 }
 
                 // Engine chip
