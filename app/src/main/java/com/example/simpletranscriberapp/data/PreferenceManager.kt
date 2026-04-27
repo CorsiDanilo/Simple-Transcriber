@@ -32,7 +32,7 @@ class PreferenceManager(private val context: Context) {
         UserSettings(
             apiKey = prefs[API_KEY] ?: "",
             isPremium = prefs[IS_PREMIUM] ?: true,
-            language = prefs[LANGUAGE] ?: "English",
+            language = prefs[LANGUAGE] ?: "Italian",
             opacity = prefs[OPACITY] ?: 0.95f,
             theme = prefs[THEME] ?: "System",
             playbackMinSpeed = prefs[PLAYBACK_SPEED_MIN] ?: 0.75f,

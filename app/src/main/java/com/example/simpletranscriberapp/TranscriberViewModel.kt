@@ -49,7 +49,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     private val _apiKey = MutableStateFlow(prefs.getString("GEMINI_API_KEY", "") ?: "")
     val apiKey: StateFlow<String> = _apiKey.asStateFlow()
 
-    private val _selectedLanguage = MutableStateFlow(prefs.getString("TARGET_LANGUAGE", "English") ?: "English")
+    private val _selectedLanguage = MutableStateFlow(prefs.getString("TARGET_LANGUAGE", "Italian") ?: "Italian")
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
 
     private val _uiState = MutableStateFlow<TranscriberUiState>(TranscriberUiState.Setup)

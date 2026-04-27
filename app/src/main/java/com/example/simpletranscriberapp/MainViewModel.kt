@@ -26,7 +26,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             UserSettings(
                 apiKey = "",
                 isPremium = true,
-                language = "English",
+                language = "Italian",
                 opacity = 0.95f,
                 theme = "System",
                 playbackMinSpeed = 0.75f,
