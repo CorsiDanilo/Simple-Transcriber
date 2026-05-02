@@ -35,6 +35,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 defaultAction = "Show actions",
                 transcriptionEngine = "cloud",
                 selectedModelId = "",
+                selectedCloudModel = "gemini-flash-latest",
                 modelCatalogUrl = PreferenceManager.DEFAULT_CATALOG_URL
             )
         )
@@ -145,6 +146,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch { dao.clearAll() }
     }
 
+    fun deleteTranscription(id: Int) {
+        viewModelScope.launch { dao.deleteById(id) }
+    }
+
+    fun deleteTranscriptions(ids: Set<Int>) {
+        viewModelScope.launch { dao.deleteByIds(ids) }
+    }
+
     // ── Update settings ──────────────────────────────────────────────
 
     fun updateLanguage(lang: String) = viewModelScope.launch { prefManager.updateLanguage(lang) }
@@ -155,4 +164,5 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun updateApiKey(key: String) = viewModelScope.launch { prefManager.updateApiKey(key) }
     fun updateTranscriptionEngine(engine: String) = viewModelScope.launch { prefManager.updateTranscriptionEngine(engine) }
     fun updateSelectedModel(modelId: String) = viewModelScope.launch { prefManager.updateSelectedModel(modelId) }
+    fun updateSelectedCloudModel(modelName: String) = viewModelScope.launch { prefManager.updateSelectedCloudModel(modelName) }
 }

@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.simpletranscriberapp.data.UserSettings
@@ -41,8 +43,12 @@ fun SettingsScreen(
     onUpdateProximity: (Boolean) -> Unit,
     onUpdateDefaultAction: (String) -> Unit,
     onUpdateTranscriptionEngine: (String) -> Unit,
+    onUpdateApiKey: (String) -> Unit,
+    onUpdateSelectedCloudModel: (String) -> Unit,
     onNavigateToModelManager: () -> Unit
 ) {
+    var isApiKeyVisible by remember { mutableStateOf(false) }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -61,10 +67,10 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            val currentEngine = EngineType.fromKey(settings.transcriptionEngine)
+
             // ── Transcription Engine ──
             SettingSection("Transcription Engine") {
-                val currentEngine = EngineType.fromKey(settings.transcriptionEngine)
-
                 // Cloud
                 EngineOption(
                     icon = Icons.Default.Cloud,
@@ -106,28 +112,138 @@ fun SettingsScreen(
                     isEnabled = true,
                     onClick = { onUpdateTranscriptionEngine(EngineType.LITERT.key) }
                 )
+            }
 
-                // Link al Model Manager (visibile solo se LiteRT è selezionato)
-                if (currentEngine == EngineType.LITERT) {
-                    Spacer(Modifier.height(4.dp))
-                    TextButton(
-                        onClick = onNavigateToModelManager,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Icon(
-                            Icons.Default.Settings,
-                            null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text("Manage Models")
-                        Spacer(Modifier.weight(1f))
-                        Icon(
-                            Icons.Default.ChevronRight,
-                            null,
-                            modifier = Modifier.size(16.dp)
+            // ── Dynamic Settings based on Engine ──
+            if (currentEngine == EngineType.CLOUD) {
+                // ── Cloud Settings (Gemini) ──
+                SettingSection("Cloud Settings (Gemini)") {
+                    // API Key
+                    OutlinedTextField(
+                        value = settings.apiKey,
+                        onValueChange = onUpdateApiKey,
+                        label = { Text("Gemini API Key") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        visualTransformation = if (isApiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            IconButton(onClick = { isApiKeyVisible = !isApiKeyVisible }) {
+                                Icon(
+                                    if (isApiKeyVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    null
+                                )
+                            }
+                        }
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    // Model Selection
+                    Text("Cloud Model", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                    
+                    val cloudModels = listOf(
+                        "gemini-flash-latest" to "Gemini Flash (Latest)",
+                        "gemini-flash-lite-latest" to "Gemini Flash-Lite (Latest)"
+                    )
+
+                    cloudModels.forEach { (id, label) ->
+                        SettingRadio(
+                            title = label,
+                            selected = settings.selectedCloudModel == id,
+                            onClick = { onUpdateSelectedCloudModel(id) }
                         )
                     }
+                }
+            } else if (currentEngine == EngineType.LITERT) {
+                // ── Local Model Settings ──
+                SettingSection("Local Model Settings") {
+                    SettingItem(
+                        icon = Icons.Default.Settings,
+                        title = "Manage Models",
+                        subtitle = "Download or delete local AI models",
+                        onClick = onNavigateToModelManager
+                    )
+                }
+            }
+
+            // ── Transcription ──
+            SettingSection("Transcription") {
+                Text("Default Language", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                
+                var expanded by remember { mutableStateOf(false) }
+                val languages = listOf("Italian", "English", "Spanish", "French", "German")
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedCard(
+                        onClick = { expanded = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(settings.language)
+                            Icon(Icons.Default.ArrowDropDown, null)
+                        }
+                    }
+
+                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                        languages.forEach { lang ->
+                            DropdownMenuItem(
+                                text = { Text(lang) },
+                                onClick = {
+                                    onUpdateLanguage(lang)
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ── Behavior ──
+            SettingSection("Behavior") {
+                SettingToggle(
+                    title = "Proximity Sensor (Auto-Stop)",
+                    checked = settings.enableProximity,
+                    onCheckedChange = onUpdateProximity
+                )
+                
+                HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
+                
+                Text("Default Action after Transcription", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                val actions = listOf("Show actions", "Copy to clipboard", "Save to history")
+                actions.forEach { action ->
+                    SettingRadio(
+                        title = action,
+                        selected = settings.defaultAction == action,
+                        onClick = { onUpdateDefaultAction(action) }
+                    )
+                }
+            }
+
+            // ── UI ──
+            SettingSection("UI Customization") {
+                SettingSlider(
+                    icon = Icons.Default.Opacity,
+                    title = "Background Opacity",
+                    value = settings.opacity,
+                    onValueChange = onUpdateOpacity
+                )
+                
+                HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
+                
+                Text("Theme", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                val themes = listOf("System", "Dark", "Light")
+                themes.forEach { theme ->
+                    SettingRadio(
+                        title = theme,
+                        selected = settings.theme == theme,
+                        onClick = { onUpdateTheme(theme) }
+                    )
                 }
             }
         }

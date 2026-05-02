@@ -7,7 +7,10 @@ import com.google.ai.client.generativeai.type.content
  * Engine di trascrizione che usa l'API cloud di Gemini.
  * Refactor della logica originariamente inline nel TranscriberViewModel.
  */
-class CloudEngine(private val apiKey: String) : TranscriptionEngine {
+class CloudEngine(
+    private val apiKey: String,
+    private val modelName: String = "gemini-flash-latest"
+) : TranscriptionEngine {
 
     override suspend fun transcribe(
         audioBytes: ByteArray,
@@ -21,7 +24,7 @@ class CloudEngine(private val apiKey: String) : TranscriptionEngine {
 
         return try {
             val generativeModel = GenerativeModel(
-                modelName = "gemini-2.5-flash",
+                modelName = modelName,
                 apiKey = apiKey
             )
 
@@ -49,13 +52,13 @@ class CloudEngine(private val apiKey: String) : TranscriptionEngine {
 
     override fun isAvailable(): Boolean = apiKey.isNotBlank()
 
-    override fun displayName(): String = "Cloud (Gemini)"
+    override fun displayName(): String = "Cloud ($modelName)"
 
     override suspend fun refineText(text: String, language: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         if (apiKey.isBlank()) return@withContext text
         try {
             val generativeModel = GenerativeModel(
-                modelName = "gemini-2.5-flash",
+                modelName = modelName,
                 apiKey = apiKey
             )
             val response = generativeModel.generateContent(

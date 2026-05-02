@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
                         uiState = transcriberState,
                         currentApiKey = settings.apiKey,
                         currentLanguage = settings.language,
+                        currentCloudModel = settings.selectedCloudModel,
                         currentEngine = settings.transcriptionEngine,
                         selectedModelName = selectedModelName,
                         isModelDownloaded = isModelDownloaded,
@@ -81,6 +82,7 @@ class MainActivity : ComponentActivity() {
                         onCopyToClipboard = { text -> copyToClipboard(text) },
                         onUpdateApiKey = { mainViewModel.updateApiKey(it) },
                         onUpdateLanguage = { mainViewModel.updateLanguage(it) },
+                        onUpdateCloudModel = { mainViewModel.updateSelectedCloudModel(it) },
                         onEngineChange = { 
                             mainViewModel.updateTranscriptionEngine(it)
                             transcriberViewModel.clearError()
@@ -100,6 +102,9 @@ class MainActivity : ComponentActivity() {
                                 HistoryScreen(
                                     items = history,
                                     onClearHistory = { mainViewModel.clearHistory() },
+                                    onDeleteItem = { mainViewModel.deleteTranscription(it) },
+                                    onDeleteItems = { mainViewModel.deleteTranscriptions(it) },
+                                    onCopyToClipboard = { copyToClipboard(it) },
                                     onNavigateToSettings = { navController.navigate("settings") }
                                 )
                             }
@@ -115,6 +120,8 @@ class MainActivity : ComponentActivity() {
                                     onUpdateProximity = { mainViewModel.updateProximity(it) },
                                     onUpdateDefaultAction = { mainViewModel.updateDefaultAction(it) },
                                     onUpdateTranscriptionEngine = { mainViewModel.updateTranscriptionEngine(it) },
+                                    onUpdateApiKey = { mainViewModel.updateApiKey(it) },
+                                    onUpdateSelectedCloudModel = { mainViewModel.updateSelectedCloudModel(it) },
                                     onNavigateToModelManager = { navController.navigate("model_manager") }
                                 )
                             }

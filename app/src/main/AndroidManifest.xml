@@ -32,7 +32,7 @@
             android:name=".MainActivity"
             android:exported="true"
             android:theme="@style/Theme.SimpleTranscriberApp"
-            android:excludeFromRecents="true"
+            android:excludeFromRecents="false"
             android:taskAffinity=""
             android:launchMode="singleTask">
 

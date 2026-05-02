@@ -38,20 +38,12 @@ sealed class TranscriberUiState {
 
 class TranscriberViewModel(application: Application) : AndroidViewModel(application) {
 
-    private val prefs = application.getSharedPreferences("transcriber_prefs", Context.MODE_PRIVATE)
     private val prefManager = PreferenceManager(application)
     private val modelRepository = ModelRepository(application)
     
     // Cache for engines to avoid repeated initialization
     private var cachedLiteRTEngine: LiteRTEngine? = null
     
-    // Stato per la API Key e la Lingua (persistenze)
-    private val _apiKey = MutableStateFlow(prefs.getString("GEMINI_API_KEY", "") ?: "")
-    val apiKey: StateFlow<String> = _apiKey.asStateFlow()
-
-    private val _selectedLanguage = MutableStateFlow(prefs.getString("TARGET_LANGUAGE", "Italian") ?: "Italian")
-    val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
-
     private val _uiState = MutableStateFlow<TranscriberUiState>(TranscriberUiState.Setup)
     val uiState: StateFlow<TranscriberUiState> = _uiState.asStateFlow()
 
@@ -60,18 +52,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
 
     fun setPendingAudio(uri: Uri) {
         pendingAudioUri = uri
-        // Se abbiamo già l'API Key, restiamo comunque in Setup per confermare la lingua
         _uiState.value = TranscriberUiState.Setup
-    }
-
-    fun updateApiKey(newKey: String) {
-        _apiKey.value = newKey
-        prefs.edit().putString("GEMINI_API_KEY", newKey).apply()
-    }
-
-    fun updateLanguage(newLang: String) {
-        _selectedLanguage.value = newLang
-        prefs.edit().putString("TARGET_LANGUAGE", newLang).apply()
     }
 
     /**
@@ -88,7 +69,7 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 val engineType = EngineType.fromKey(settings.transcriptionEngine)
 
                 // Crea l'engine appropriato
-                val engine = createEngine(engineType, settings.selectedModelId, settings.apiKey)
+                val engine = createEngine(engineType, settings.selectedModelId, settings.apiKey, settings.selectedCloudModel)
 
                 // Leggi l'audio
                 val audioBytes = withContext(Dispatchers.IO) {
@@ -132,10 +113,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     private suspend fun createEngine(
         engineType: EngineType,
         selectedModelId: String,
-        apiKey: String
+        apiKey: String,
+        selectedCloudModel: String
     ): TranscriptionEngine {
         return when (engineType) {
-            EngineType.CLOUD -> CloudEngine(apiKey)
+            EngineType.CLOUD -> CloudEngine(apiKey, selectedCloudModel)
             EngineType.AICORE -> AICoreEngine(getApplication())
             EngineType.LITERT -> {
                 // Recupera il catalogo per trovare il path del modello

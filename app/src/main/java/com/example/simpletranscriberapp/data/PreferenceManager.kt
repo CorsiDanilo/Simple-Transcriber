@@ -22,6 +22,7 @@ class PreferenceManager(private val context: Context) {
         val DEFAULT_ACTION = stringPreferencesKey("default_action")
         val TRANSCRIPTION_ENGINE = stringPreferencesKey("transcription_engine")
         val SELECTED_MODEL_ID = stringPreferencesKey("selected_model_id")
+        val SELECTED_CLOUD_MODEL = stringPreferencesKey("selected_cloud_model")
         val MODEL_CATALOG_URL = stringPreferencesKey("model_catalog_url")
 
         const val DEFAULT_CATALOG_URL =
@@ -41,6 +42,7 @@ class PreferenceManager(private val context: Context) {
             defaultAction = prefs[DEFAULT_ACTION] ?: "Show actions",
             transcriptionEngine = prefs[TRANSCRIPTION_ENGINE] ?: "cloud",
             selectedModelId = prefs[SELECTED_MODEL_ID] ?: "",
+            selectedCloudModel = prefs[SELECTED_CLOUD_MODEL] ?: "gemini-flash-latest",
             modelCatalogUrl = prefs[MODEL_CATALOG_URL] ?: DEFAULT_CATALOG_URL
         )
     }
@@ -58,6 +60,7 @@ class PreferenceManager(private val context: Context) {
     suspend fun updateDefaultAction(value: String) = context.dataStore.edit { it[DEFAULT_ACTION] = value }
     suspend fun updateTranscriptionEngine(value: String) = context.dataStore.edit { it[TRANSCRIPTION_ENGINE] = value }
     suspend fun updateSelectedModel(value: String) = context.dataStore.edit { it[SELECTED_MODEL_ID] = value }
+    suspend fun updateSelectedCloudModel(value: String) = context.dataStore.edit { it[SELECTED_CLOUD_MODEL] = value }
     suspend fun updateModelCatalogUrl(value: String) = context.dataStore.edit { it[MODEL_CATALOG_URL] = value }
 }
 
@@ -73,5 +76,6 @@ data class UserSettings(
     val defaultAction: String,
     val transcriptionEngine: String,
     val selectedModelId: String,
+    val selectedCloudModel: String,
     val modelCatalogUrl: String
 )

@@ -36,9 +36,11 @@ fun TranscriberScreen(
     onStartTranscription: () -> Unit,
     onUpdateApiKey: (String) -> Unit,
     onUpdateLanguage: (String) -> Unit,
+    onUpdateCloudModel: (String) -> Unit,
     onEngineChange: (String) -> Unit,
     currentApiKey: String,
     currentLanguage: String,
+    currentCloudModel: String = "gemini-flash-latest",
     currentEngine: String = "cloud",
     selectedModelName: String = "",
     isModelDownloaded: Boolean = false,
@@ -89,11 +91,13 @@ fun TranscriberScreen(
                     is TranscriberUiState.Setup -> SetupContent(
                         apiKey = currentApiKey,
                         selectedLanguage = currentLanguage,
+                        selectedCloudModel = currentCloudModel,
                         engineType = engineType,
                         selectedModelName = selectedModelName,
                         isModelDownloaded = isModelDownloaded,
                         onApiKeyChange = onUpdateApiKey,
                         onLanguageChange = onUpdateLanguage,
+                        onCloudModelChange = onUpdateCloudModel,
                         onStart = onStartTranscription
                     )
                     is TranscriberUiState.Loading -> LoadingContent(state.progressMessage)
@@ -178,14 +182,17 @@ private fun EngineChip(
 fun SetupContent(
     apiKey: String,
     selectedLanguage: String,
+    selectedCloudModel: String,
     engineType: EngineType,
     selectedModelName: String,
     isModelDownloaded: Boolean,
     onApiKeyChange: (String) -> Unit,
     onLanguageChange: (String) -> Unit,
+    onCloudModelChange: (String) -> Unit,
     onStart: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    var langExpanded by remember { mutableStateOf(false) }
+    var modelExpanded by remember { mutableStateOf(false) }
     var isApiKeyVisible by remember { mutableStateOf(false) }
     // Una lista espandibile con le principali lingue. Per "tutte" usiamo un subset comune.
     val languages = listOf("Italian", "English", "Spanish", "French", "German", "Portuguese", "Russian", "Chinese", "Japanese", "Arabic")
@@ -220,6 +227,45 @@ fun SetupContent(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true
             )
+
+            // Cloud Model Dropdown
+            Box(modifier = Modifier.fillMaxWidth()) {
+                ExposedDropdownMenuBox(
+                    expanded = modelExpanded,
+                    onExpandedChange = { modelExpanded = !modelExpanded }
+                ) {
+                    val cloudModels = listOf(
+                        "gemini-flash-latest" to "Gemini Flash (Latest)",
+                        "gemini-flash-lite-latest" to "Gemini Flash-Lite (Latest)"
+                    )
+                    val currentModelLabel = cloudModels.find { it.first == selectedCloudModel }?.second ?: selectedCloudModel
+
+                    OutlinedTextField(
+                        value = currentModelLabel,
+                        onValueChange = {},
+                        readOnly = true,
+                        label = { Text("Cloud Model") },
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded) },
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    ExposedDropdownMenu(
+                        expanded = modelExpanded,
+                        onDismissRequest = { modelExpanded = false }
+                    ) {
+                        cloudModels.forEach { (id, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    onCloudModelChange(id)
+                                    modelExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         // Model info — solo per LiteRT
@@ -309,29 +355,29 @@ fun SetupContent(
         // Language Dropdown
         Box(modifier = Modifier.fillMaxWidth()) {
             ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
+                expanded = langExpanded,
+                onExpandedChange = { langExpanded = !langExpanded }
             ) {
                 OutlinedTextField(
                     value = selectedLanguage,
                     onValueChange = {},
                     readOnly = true,
                     label = { Text("Transcription Language") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = langExpanded) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 )
 
                 ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
+                    expanded = langExpanded,
+                    onDismissRequest = { langExpanded = false }
                 ) {
                     languages.forEach { lang ->
                         DropdownMenuItem(
                             text = { Text(lang) },
                             onClick = {
                                 onLanguageChange(lang)
-                                expanded = false
+                                langExpanded = false
                             }
                         )
                     }
