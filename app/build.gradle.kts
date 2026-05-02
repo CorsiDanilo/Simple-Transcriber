@@ -25,7 +25,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
 
         // Espone la chiave API come costante BuildConfig accessibile nel codice Kotlin
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
