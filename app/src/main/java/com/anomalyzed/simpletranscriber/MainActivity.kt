@@ -27,6 +27,15 @@ import com.anomalyzed.simpletranscriber.ui.screens.HistoryScreen
 import com.anomalyzed.simpletranscriber.ui.screens.ModelManagerScreen
 import com.anomalyzed.simpletranscriber.ui.screens.SettingsScreen
 import com.anomalyzed.simpletranscriber.ui.theme.TranscriberTheme
+import com.anomalyzed.simpletranscriber.updater.AppUpdater
+import com.anomalyzed.simpletranscriber.updater.UpdateInfo
+import com.anomalyzed.simpletranscriber.updater.DownloadReceiver
+import com.anomalyzed.simpletranscriber.ui.updater.UpdateDialog
+import android.app.DownloadManager
+import android.os.Environment
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+import java.io.File
 
 class MainActivity : ComponentActivity() {
 
@@ -51,6 +60,35 @@ class MainActivity : ComponentActivity() {
             val modelsWithStatus by mainViewModel.modelsWithStatus.collectAsState()
             val catalogLoading by mainViewModel.catalogLoading.collectAsState()
             val catalogError by mainViewModel.catalogError.collectAsState()
+
+            var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+            val context = LocalContext.current
+            val scope = rememberCoroutineScope()
+
+            LaunchedEffect(Unit) {
+                scope.launch {
+                    try {
+                        // Pulisce i vecchi APK residui nella cartella Download
+                        val downloadsDir = context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                        downloadsDir?.listFiles()?.forEach { file ->
+                            if (file.isFile && file.name.endsWith(".apk") && file.name.startsWith("transcriber-")) {
+                                file.delete()
+                            }
+                        }
+
+                        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                        val currentVersion = packageInfo.versionName ?: "1.0.0"
+                        
+                        val updater = AppUpdater()
+                        val info = updater.checkForUpdate(currentVersion)
+                        if (info.updateAvailable) {
+                            updateInfo = info
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
 
             // Calcola il nome e lo stato del modello selezionato
             val selectedModelInfo = remember(modelsWithStatus, settings.selectedModelId) {
@@ -144,7 +182,38 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+
+                updateInfo?.let { info ->
+                    UpdateDialog(
+                        updateInfo = info,
+                        onDismiss = { updateInfo = null },
+                        onConfirm = {
+                            info.downloadUrl?.let { url ->
+                                downloadUpdate(url, info.versionName)
+                            }
+                            updateInfo = null
+                        }
+                    )
+                }
             }
+        }
+    }
+
+    private fun downloadUpdate(url: String, versionName: String) {
+        try {
+            val request = DownloadManager.Request(Uri.parse(url))
+                .setTitle("Aggiornamento Transcriber")
+                .setDescription("Scaricando la versione $versionName")
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "transcriber-$versionName.apk")
+                .setAllowedOverMetered(true)
+                .setAllowedOverRoaming(true)
+                
+            val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+            DownloadReceiver.enqueuedDownloadId = downloadManager.enqueue(request)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Errore nel download: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
