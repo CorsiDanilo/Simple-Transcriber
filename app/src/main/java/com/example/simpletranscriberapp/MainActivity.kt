@@ -87,7 +87,12 @@ class MainActivity : ComponentActivity() {
                             mainViewModel.updateTranscriptionEngine(it)
                             transcriberViewModel.clearError()
                         },
-                        onStartTranscription = { transcriberViewModel.startTranscription(contentResolver) }
+                        onStartTranscription = { 
+                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
+                            }
+                            transcriberViewModel.startTranscription(this@MainActivity) 
+                        }
                     )
                 } else {
                     val navController = rememberNavController()

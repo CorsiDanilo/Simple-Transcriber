@@ -3,6 +3,9 @@
 
     <!-- Permesso di rete per chiamare le API di Gemini -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- AICore: on-device AI (opzionale, non richiesto) -->
     <uses-feature android:name="com.google.android.aicore" android:required="false" />
@@ -60,6 +63,11 @@
             </intent-filter>
 
         </activity>
+
+        <service
+            android:name=".TranscriptionService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
     </application>
 
 </manifest>

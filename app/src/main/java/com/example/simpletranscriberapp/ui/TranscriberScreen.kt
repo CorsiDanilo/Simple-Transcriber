@@ -109,6 +109,22 @@ fun TranscriberScreen(
                     )
                 }
 
+                if (uiState is TranscriberUiState.Loading || uiState is TranscriberUiState.Streaming) {
+                    Button(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Layers, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Run in Background")
+                    }
+                }
+
                 OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
                     Text(stringResource(R.string.btn_close))
                 }
