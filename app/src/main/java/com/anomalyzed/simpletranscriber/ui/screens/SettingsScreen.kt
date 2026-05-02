@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.ui.screens
+package com.anomalyzed.simpletranscriber.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
@@ -24,10 +24,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.simpletranscriberapp.data.UserSettings
-import com.example.simpletranscriberapp.engine.EngineType
-import com.example.simpletranscriberapp.ui.theme.DarkGray
-import com.example.simpletranscriberapp.ui.theme.Gold
+import com.anomalyzed.simpletranscriber.data.UserSettings
+import com.anomalyzed.simpletranscriber.engine.EngineType
+import com.anomalyzed.simpletranscriber.ui.theme.DarkGray
+import com.anomalyzed.simpletranscriber.ui.theme.Gold
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,7 +66,7 @@ fun SettingsScreen(
             val currentEngine = EngineType.fromKey(settings.transcriptionEngine)
 
             // ── Transcription Engine ──
-            SettingSection("Transcription Engine") {
+            SettingSection("Transcriber Engine") {
                 // Cloud
                 EngineOption(
                     icon = Icons.Default.Cloud,
@@ -163,7 +163,7 @@ fun SettingsScreen(
             }
 
             // ── Transcription ──
-            SettingSection("Transcription") {
+            SettingSection("Transcriber Settings") {
                 Text("Default Language", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
                 
                 var expanded by remember { mutableStateOf(false) }

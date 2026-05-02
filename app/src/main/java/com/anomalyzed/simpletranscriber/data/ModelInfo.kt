@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.data
+package com.anomalyzed.simpletranscriber.data
 
 import org.json.JSONArray
 import org.json.JSONObject

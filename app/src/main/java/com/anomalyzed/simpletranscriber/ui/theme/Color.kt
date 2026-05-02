@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.ui.theme
+package com.anomalyzed.simpletranscriber.ui.theme
 
 import androidx.compose.ui.graphics.Color
 

@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp
+package com.anomalyzed.simpletranscriber
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -10,16 +10,16 @@ import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
-import com.example.simpletranscriberapp.data.AppDatabase
-import com.example.simpletranscriberapp.data.ModelRepository
-import com.example.simpletranscriberapp.data.PreferenceManager
-import com.example.simpletranscriberapp.data.TranscriptionItem
-import com.example.simpletranscriberapp.engine.AICoreEngine
-import com.example.simpletranscriberapp.engine.CloudEngine
-import com.example.simpletranscriberapp.engine.EngineType
-import com.example.simpletranscriberapp.engine.LiteRTEngine
-import com.example.simpletranscriberapp.engine.TranscriptionEngine
-import com.example.simpletranscriberapp.engine.TranscriptionResult
+import com.anomalyzed.simpletranscriber.data.AppDatabase
+import com.anomalyzed.simpletranscriber.data.ModelRepository
+import com.anomalyzed.simpletranscriber.data.PreferenceManager
+import com.anomalyzed.simpletranscriber.data.TranscriptionItem
+import com.anomalyzed.simpletranscriber.engine.AICoreEngine
+import com.anomalyzed.simpletranscriber.engine.CloudEngine
+import com.anomalyzed.simpletranscriber.engine.EngineType
+import com.anomalyzed.simpletranscriber.engine.LiteRTEngine
+import com.anomalyzed.simpletranscriber.engine.TranscriptionEngine
+import com.anomalyzed.simpletranscriber.engine.TranscriptionResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -69,11 +69,12 @@ class TranscriptionService : Service() {
     private fun startTranscription(uri: Uri) {
         scope.launch {
             TranscriptionManager.setState(TranscriberUiState.Loading("Initializing..."))
+            var engine: TranscriptionEngine? = null
             try {
                 val settings = prefManager.settingsFlow.first()
                 val engineType = EngineType.fromKey(settings.transcriptionEngine)
 
-                val engine = createEngine(engineType, settings.selectedModelId, settings.apiKey, settings.selectedCloudModel)
+                engine = createEngine(engineType, settings.selectedModelId, settings.apiKey, settings.selectedCloudModel)
 
                 val audioBytes = readUriToByteArray(uri)
                 val mimeType = contentResolver.getType(uri) ?: "audio/ogg"
@@ -113,6 +114,7 @@ class TranscriptionService : Service() {
                 TranscriptionManager.setState(TranscriberUiState.Error(msg))
                 showErrorNotification(msg)
             } finally {
+                engine?.release()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     stopForeground(STOP_FOREGROUND_DETACH)
                 } else {
@@ -154,7 +156,7 @@ class TranscriptionService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Transcription",
+                "Transcriber",
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
@@ -171,7 +173,7 @@ class TranscriptionService : Service() {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Transcription")
+            .setContentTitle("Transcriber")
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(pendingIntent)
@@ -193,7 +195,7 @@ class TranscriptionService : Service() {
         )
 
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Transcription Complete")
+            .setContentTitle("Transcriber Complete")
             .setContentText("Tap to view history")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(pendingIntent)
@@ -206,7 +208,7 @@ class TranscriptionService : Service() {
 
     private fun showErrorNotification(msg: String) {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Transcription Error")
+            .setContentTitle("Transcriber Error")
             .setContentText(msg)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setAutoCancel(true)

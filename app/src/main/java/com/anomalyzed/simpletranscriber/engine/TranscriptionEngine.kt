@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.engine
+package com.anomalyzed.simpletranscriber.engine
 
 /**
  * Risultato di una trascrizione.
@@ -54,6 +54,11 @@ interface TranscriptionEngine {
         language: String,
         onPartialText: (String) -> Unit = {}
     ): String = text
+
+    /**
+     * Rilascia le risorse allocate dall'engine (es. modelli in memoria nativa).
+     */
+    fun release() {}
 }
 
 /**

@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SimpleTranscriberApp"
+rootProject.name = "Transcriber"
 include(":app")

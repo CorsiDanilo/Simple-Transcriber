@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp
+package com.anomalyzed.simpletranscriber
 
 import android.app.Application
 import android.content.ContentResolver
@@ -7,9 +7,9 @@ import android.content.Intent
 import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.simpletranscriberapp.data.ModelRepository
-import com.example.simpletranscriberapp.data.PreferenceManager
-import com.example.simpletranscriberapp.engine.*
+import com.anomalyzed.simpletranscriber.data.ModelRepository
+import com.anomalyzed.simpletranscriber.data.PreferenceManager
+import com.anomalyzed.simpletranscriber.engine.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

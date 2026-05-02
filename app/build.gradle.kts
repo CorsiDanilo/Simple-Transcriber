@@ -17,11 +17,11 @@ val localProperties = Properties().apply {
 val geminiApiKey: String = localProperties.getProperty("GEMINI_API_KEY") ?: ""
 
 android {
-    namespace = "com.example.simpletranscriberapp"
+    namespace = "com.anomalyzed.simpletranscriber"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.simpletranscriberapp"
+        applicationId = "com.anomalyzed.simpletranscriber"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

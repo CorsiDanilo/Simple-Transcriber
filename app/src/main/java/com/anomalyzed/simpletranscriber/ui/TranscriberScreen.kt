@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.ui
+package com.anomalyzed.simpletranscriber.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -23,10 +23,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.simpletranscriberapp.R
-import com.example.simpletranscriberapp.TranscriberUiState
-import com.example.simpletranscriberapp.engine.EngineType
-import com.example.simpletranscriberapp.ui.theme.Gold
+import com.anomalyzed.simpletranscriber.R
+import com.anomalyzed.simpletranscriber.TranscriberUiState
+import com.anomalyzed.simpletranscriber.engine.EngineType
+import com.anomalyzed.simpletranscriber.ui.theme.Gold
 
 @Composable
 fun TranscriberScreen(
@@ -73,7 +73,7 @@ fun TranscriberScreen(
                 // Header
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(Icons.Default.Translate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text("Transcription", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                    Text("Transcriber", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
                 }
 
                 // Engine chip
@@ -379,7 +379,7 @@ fun SetupContent(
                     value = selectedLanguage,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Transcription Language") },
+                    label = { Text("Transcriber Language") },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = langExpanded) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -497,7 +497,7 @@ fun ErrorContent(msg: String, onRetry: () -> Unit) {
                     modifier = Modifier.size(40.dp)
                 )
                 Text(
-                    "Transcription Error",
+                    "Transcriber Error",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold

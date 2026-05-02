@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.ui.screens
+package com.anomalyzed.simpletranscriber.ui.screens
 
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
@@ -19,11 +19,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.simpletranscriberapp.data.ModelInfo
-import com.example.simpletranscriberapp.data.ModelStatus
-import com.example.simpletranscriberapp.data.ModelWithStatus
-import com.example.simpletranscriberapp.ui.theme.DarkGray
-import com.example.simpletranscriberapp.ui.theme.Gold
+import com.anomalyzed.simpletranscriber.data.ModelInfo
+import com.anomalyzed.simpletranscriber.data.ModelStatus
+import com.anomalyzed.simpletranscriber.data.ModelWithStatus
+import com.anomalyzed.simpletranscriber.ui.theme.DarkGray
+import com.anomalyzed.simpletranscriber.ui.theme.Gold
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

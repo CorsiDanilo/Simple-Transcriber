@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.engine
+package com.anomalyzed.simpletranscriber.engine
 
 import android.content.Context
 import java.io.File
@@ -36,7 +36,7 @@ class LiteRTEngine(
     private suspend fun getOrInitEngine(onProgress: (String) -> Unit): Engine {
         return engine ?: engineMutex.withLock {
             engine ?: run {
-                onProgress("Initializing engine & optimizing 976 layers... this may take up to 60s")
+                onProgress("Initializing engine... this may take up to 60s")
                 Log.d(TAG, "Starting engine initialization for model: $modelPath")
                 
                 // Smart cache clearing: only delete if something went wrong or cache is tiny
@@ -238,5 +238,11 @@ class LiteRTEngine(
         } catch (e: Exception) {
             text
         }
+    }
+
+    override fun release() {
+        engine?.close()
+        engine = null
+        Log.d(TAG, "Engine released and resources freed")
     }
 }

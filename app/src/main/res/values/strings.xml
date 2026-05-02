@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Transcription</string>
+    <string name="app_name">Transcriber</string>
     <string name="title_transcribing">Transcribing...</string>
     <string name="info_gemini">Powered by Gemini AI</string>
     <string name="btn_copy">Copy to clipboard</string>

@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.engine
+package com.anomalyzed.simpletranscriber.engine
 
 import android.media.MediaCodec
 import android.media.MediaExtractor

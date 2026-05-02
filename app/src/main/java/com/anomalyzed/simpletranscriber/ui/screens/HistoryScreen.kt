@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.ui.screens
+package com.anomalyzed.simpletranscriber.ui.screens
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -27,9 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.simpletranscriberapp.data.TranscriptionItem
-import com.example.simpletranscriberapp.ui.theme.DarkGray
-import com.example.simpletranscriberapp.ui.theme.Gold
+import com.anomalyzed.simpletranscriber.data.TranscriptionItem
+import com.anomalyzed.simpletranscriber.ui.theme.DarkGray
+import com.anomalyzed.simpletranscriber.ui.theme.Gold
 import java.text.SimpleDateFormat
 import java.util.*
 

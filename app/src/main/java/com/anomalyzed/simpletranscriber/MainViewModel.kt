@@ -1,9 +1,9 @@
-package com.example.simpletranscriberapp
+package com.anomalyzed.simpletranscriber
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.simpletranscriberapp.data.*
+import com.anomalyzed.simpletranscriber.data.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 

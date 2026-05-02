@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.ui.theme
+package com.anomalyzed.simpletranscriber.ui.theme
 
 import android.app.Activity
 import android.os.Build
@@ -29,7 +29,7 @@ private val DarkColorScheme = darkColorScheme(
 // Rimuovo LightColorScheme poiché l'app è solo scura come da immagini
 
 @Composable
-fun SimpleTranscriberAppTheme(
+fun TranscriberTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = DarkColorScheme

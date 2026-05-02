@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp
+package com.anomalyzed.simpletranscriber
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

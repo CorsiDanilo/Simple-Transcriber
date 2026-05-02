@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.data
+package com.anomalyzed.simpletranscriber.data
 
 import android.content.Context
 import androidx.datastore.preferences.core.*

@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp
+package com.anomalyzed.simpletranscriber
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -22,11 +22,11 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.simpletranscriberapp.ui.TranscriberScreen
-import com.example.simpletranscriberapp.ui.screens.HistoryScreen
-import com.example.simpletranscriberapp.ui.screens.ModelManagerScreen
-import com.example.simpletranscriberapp.ui.screens.SettingsScreen
-import com.example.simpletranscriberapp.ui.theme.SimpleTranscriberAppTheme
+import com.anomalyzed.simpletranscriber.ui.TranscriberScreen
+import com.anomalyzed.simpletranscriber.ui.screens.HistoryScreen
+import com.anomalyzed.simpletranscriber.ui.screens.ModelManagerScreen
+import com.anomalyzed.simpletranscriber.ui.screens.SettingsScreen
+import com.anomalyzed.simpletranscriber.ui.theme.TranscriberTheme
 
 class MainActivity : ComponentActivity() {
 
@@ -57,10 +57,10 @@ class MainActivity : ComponentActivity() {
                 modelsWithStatus.find { it.info.id == settings.selectedModelId }
             }
             val selectedModelName = selectedModelInfo?.info?.displayName ?: ""
-            val isModelDownloaded = selectedModelInfo?.status == com.example.simpletranscriberapp.data.ModelStatus.Selected || 
-                                    selectedModelInfo?.status == com.example.simpletranscriberapp.data.ModelStatus.Downloaded
+            val isModelDownloaded = selectedModelInfo?.status == com.anomalyzed.simpletranscriber.data.ModelStatus.Selected || 
+                                    selectedModelInfo?.status == com.anomalyzed.simpletranscriber.data.ModelStatus.Downloaded
 
-            SimpleTranscriberAppTheme {
+            TranscriberTheme {
                 if (isShareFlow) {
                     // In modalita condivisione mostriamo solo il popup del transcriber.
                     LaunchedEffect(transcriberState) {
@@ -169,7 +169,7 @@ class MainActivity : ComponentActivity() {
 
     private fun copyToClipboard(text: String) {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("Transcription", text))
+        clipboard.setPrimaryClip(ClipData.newPlainText("Transcriber", text))
         Toast.makeText(this, "Copied!", Toast.LENGTH_SHORT).show()
     }
 }

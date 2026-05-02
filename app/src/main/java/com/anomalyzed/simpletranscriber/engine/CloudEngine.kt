@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.engine
+package com.anomalyzed.simpletranscriber.engine
 
 import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
