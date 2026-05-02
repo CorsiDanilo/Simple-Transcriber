@@ -38,10 +38,6 @@ fun SettingsScreen(
     selectedModelName: String,
     onNavigateBack: () -> Unit,
     onUpdateLanguage: (String) -> Unit,
-    onUpdateOpacity: (Float) -> Unit,
-    onUpdateTheme: (String) -> Unit,
-    onUpdateProximity: (Boolean) -> Unit,
-    onUpdateDefaultAction: (String) -> Unit,
     onUpdateTranscriptionEngine: (String) -> Unit,
     onUpdateApiKey: (String) -> Unit,
     onUpdateSelectedCloudModel: (String) -> Unit,
@@ -204,48 +200,7 @@ fun SettingsScreen(
                 }
             }
 
-            // ── Behavior ──
-            SettingSection("Behavior") {
-                SettingToggle(
-                    title = "Proximity Sensor (Auto-Stop)",
-                    checked = settings.enableProximity,
-                    onCheckedChange = onUpdateProximity
-                )
-                
-                HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
-                
-                Text("Default Action after Transcription", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
-                val actions = listOf("Show actions", "Copy to clipboard", "Save to history")
-                actions.forEach { action ->
-                    SettingRadio(
-                        title = action,
-                        selected = settings.defaultAction == action,
-                        onClick = { onUpdateDefaultAction(action) }
-                    )
-                }
-            }
 
-            // ── UI ──
-            SettingSection("UI Customization") {
-                SettingSlider(
-                    icon = Icons.Default.Opacity,
-                    title = "Background Opacity",
-                    value = settings.opacity,
-                    onValueChange = onUpdateOpacity
-                )
-                
-                HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
-                
-                Text("Theme", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
-                val themes = listOf("System", "Dark", "Light")
-                themes.forEach { theme ->
-                    SettingRadio(
-                        title = theme,
-                        selected = settings.theme == theme,
-                        onClick = { onUpdateTheme(theme) }
-                    )
-                }
-            }
         }
     }
 }

@@ -29,7 +29,8 @@ interface TranscriptionEngine {
         audioBytes: ByteArray,
         mimeType: String,
         language: String,
-        onProgress: (String) -> Unit = {}
+        onProgress: (String) -> Unit = {},
+        onPartialText: (String) -> Unit = {}
     ): TranscriptionResult
 
     /**
@@ -48,7 +49,11 @@ interface TranscriptionEngine {
     /**
      * Rifinisce il testo trascritto per correggere errori grammaticali o di punteggiatura.
      */
-    suspend fun refineText(text: String, language: String): String = text
+    suspend fun refineText(
+        text: String, 
+        language: String,
+        onPartialText: (String) -> Unit = {}
+    ): String = text
 }
 
 /**

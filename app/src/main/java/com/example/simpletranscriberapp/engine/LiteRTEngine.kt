@@ -93,7 +93,8 @@ class LiteRTEngine(
         audioBytes: ByteArray,
         mimeType: String,
         language: String,
-        onProgress: (String) -> Unit
+        onProgress: (String) -> Unit,
+        onPartialText: (String) -> Unit
     ): TranscriptionResult {
         if (modelPath == null) {
             return TranscriptionResult.Error("No model selected. Please download and select a model first.")
@@ -129,6 +130,7 @@ class LiteRTEngine(
                 when (segmentResult) {
                     is TranscriptionResult.Success -> {
                         results.add(segmentResult.text)
+                        onPartialText(results.joinToString(" "))
                     }
                     is TranscriptionResult.Error -> {
                         if (totalSegments > 1) {
@@ -210,7 +212,11 @@ class LiteRTEngine(
 
     override fun displayName(): String = modelDisplayName
 
-    override suspend fun refineText(text: String, language: String): String = withContext(Dispatchers.Default) {
+    override suspend fun refineText(
+        text: String, 
+        language: String,
+        onPartialText: (String) -> Unit
+    ): String = withContext(Dispatchers.Default) {
         try {
             val litertEngine = getOrInitEngine { }
             litertEngine.createConversation().use { conversation ->
@@ -225,7 +231,9 @@ class LiteRTEngine(
                     .joinToString("") { it.text }
                 
                 val refined = resultText.trim()
-                if (refined.isNotBlank()) refined else text
+                val finalRefined = if (refined.isNotBlank()) refined else text
+                onPartialText(finalRefined)
+                finalRefined
             }
         } catch (e: Exception) {
             text

@@ -16,7 +16,8 @@ class CloudEngine(
         audioBytes: ByteArray,
         mimeType: String,
         language: String,
-        onProgress: (String) -> Unit
+        onProgress: (String) -> Unit,
+        onPartialText: (String) -> Unit
     ): TranscriptionResult {
         if (apiKey.isBlank()) {
             return TranscriptionResult.Error("API Key is missing. Please enter it first.")
@@ -37,10 +38,15 @@ class CloudEngine(
                 )
             }
 
-            val response = generativeModel.generateContent(requestContent)
-            val text = response.text?.trim()
+            val responseStream = generativeModel.generateContentStream(requestContent)
+            var text = ""
+            responseStream.collect { chunk ->
+                text += chunk.text ?: ""
+                onPartialText(text)
+            }
+            text = text.trim()
 
-            if (!text.isNullOrBlank()) {
+            if (text.isNotBlank()) {
                 TranscriptionResult.Success(text)
             } else {
                 TranscriptionResult.Error("Gemini returned no text. Check audio volume or content.")
@@ -54,18 +60,27 @@ class CloudEngine(
 
     override fun displayName(): String = "Cloud ($modelName)"
 
-    override suspend fun refineText(text: String, language: String): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    override suspend fun refineText(
+        text: String, 
+        language: String,
+        onPartialText: (String) -> Unit
+    ): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         if (apiKey.isBlank()) return@withContext text
         try {
             val generativeModel = GenerativeModel(
                 modelName = modelName,
                 apiKey = apiKey
             )
-            val response = generativeModel.generateContent(
+            val responseStream = generativeModel.generateContentStream(
                 "Fix the punctuation, syntax, and grammatical errors of the following transcribed text, keeping the original meaning intact. Respond ONLY with the corrected text in $language language:\n\n$text"
             )
-            val refined = response.text?.trim()
-            if (!refined.isNullOrBlank()) refined else text
+            var refinedText = ""
+            responseStream.collect { chunk ->
+                refinedText += chunk.text ?: ""
+                onPartialText(refinedText)
+            }
+            val refined = refinedText.trim()
+            if (refined.isNotBlank()) refined else text
         } catch (e: Exception) {
             text
         }

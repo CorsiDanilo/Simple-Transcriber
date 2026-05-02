@@ -29,6 +29,9 @@ sealed class TranscriberUiState {
     /** Trascrizione in corso, con messaggio di stato opzionale */
     data class Loading(val progressMessage: String = "") : TranscriberUiState()
 
+    /** Testo generato in streaming */
+    data class Streaming(val partialText: String, val isRefining: Boolean = false) : TranscriberUiState()
+
     /** Trascrizione completata con successo */
     data class Success(val text: String) : TranscriberUiState()
 
@@ -81,17 +84,23 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
                 val result = engine.transcribe(
                     audioBytes = audioBytes,
                     mimeType = mimeType,
-                    language = settings.language
-                ) { progressMessage ->
-                    _uiState.value = TranscriberUiState.Loading(progressMessage)
-                }
+                    language = settings.language,
+                    onProgress = { progressMessage ->
+                        _uiState.value = TranscriberUiState.Loading(progressMessage)
+                    },
+                    onPartialText = { text ->
+                        _uiState.value = TranscriberUiState.Streaming(text, isRefining = false)
+                    }
+                )
 
                 // Gestisci risultato
                 when (result) {
                     is TranscriptionResult.Success -> {
                         _uiState.value = TranscriberUiState.Loading("Refining text...")
                         val refinedText = withContext(Dispatchers.IO) {
-                            engine.refineText(result.text, settings.language)
+                            engine.refineText(result.text, settings.language) { text ->
+                                _uiState.value = TranscriberUiState.Streaming(text, isRefining = true)
+                            }
                         }
                         _uiState.value = TranscriberUiState.Success(refinedText)
                     }

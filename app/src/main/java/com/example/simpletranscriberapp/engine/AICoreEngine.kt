@@ -16,7 +16,8 @@ class AICoreEngine(private val context: Context) : TranscriptionEngine {
         audioBytes: ByteArray,
         mimeType: String,
         language: String,
-        onProgress: (String) -> Unit
+        onProgress: (String) -> Unit,
+        onPartialText: (String) -> Unit
     ): TranscriptionResult {
         if (!isAvailable()) {
             return TranscriptionResult.Error(

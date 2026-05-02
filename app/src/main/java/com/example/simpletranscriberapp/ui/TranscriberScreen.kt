@@ -101,6 +101,7 @@ fun TranscriberScreen(
                         onStart = onStartTranscription
                     )
                     is TranscriberUiState.Loading -> LoadingContent(state.progressMessage)
+                    is TranscriberUiState.Streaming -> StreamingContent(state.partialText, state.isRefining, onCopyToClipboard)
                     is TranscriberUiState.Success -> SuccessContent(state.text, onCopyToClipboard)
                     is TranscriberUiState.Error -> ErrorContent(
                         msg = state.message,
@@ -420,6 +421,31 @@ fun LoadingContent(progressMessage: String = "") {
 @Composable
 fun SuccessContent(text: String, onCopy: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Box(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
+            Text(text, style = MaterialTheme.typography.bodyMedium)
+        }
+        Button(onClick = { onCopy(text) }, modifier = Modifier.fillMaxWidth()) {
+            Icon(Icons.Default.ContentCopy, null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.btn_copy))
+        }
+    }
+}
+
+@Composable
+fun StreamingContent(text: String, isRefining: Boolean, onCopy: (String) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (isRefining) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                Text(
+                    "Refining text...",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
         Box(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
             Text(text, style = MaterialTheme.typography.bodyMedium)
         }

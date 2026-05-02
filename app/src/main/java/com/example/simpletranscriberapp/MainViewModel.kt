@@ -157,10 +157,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ── Update settings ──────────────────────────────────────────────
 
     fun updateLanguage(lang: String) = viewModelScope.launch { prefManager.updateLanguage(lang) }
-    fun updateOpacity(value: Float) = viewModelScope.launch { prefManager.updateOpacity(value) }
-    fun updateTheme(theme: String) = viewModelScope.launch { prefManager.updateTheme(theme) }
-    fun updateProximity(enabled: Boolean) = viewModelScope.launch { prefManager.updateProximity(enabled) }
-    fun updateDefaultAction(action: String) = viewModelScope.launch { prefManager.updateDefaultAction(action) }
+
     fun updateApiKey(key: String) = viewModelScope.launch { prefManager.updateApiKey(key) }
     fun updateTranscriptionEngine(engine: String) = viewModelScope.launch { prefManager.updateTranscriptionEngine(engine) }
     fun updateSelectedModel(modelId: String) = viewModelScope.launch { prefManager.updateSelectedModel(modelId) }
