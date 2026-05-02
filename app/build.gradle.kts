@@ -17,11 +17,11 @@ val localProperties = Properties().apply {
 val geminiApiKey: String = localProperties.getProperty("GEMINI_API_KEY") ?: ""
 
 android {
-    namespace = "com.example.simpletranscriberapp"
+    namespace = "com.anomalyzed.simpletranscriber"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.simpletranscriberapp"
+        applicationId = "com.anomalyzed.simpletranscriber"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
@@ -74,6 +74,14 @@ dependencies {
 
     // Google Generative AI SDK (Gemini)
     implementation(libs.generativeai)
+
+    // On-device AI: ML Kit GenAI Speech Recognition (AICore)
+    // TODO: Add back when upgrading Kotlin to 2.2+
+    // implementation(libs.mlkit.genai.speech)
+
+    // On-device AI: LiteRT runtime
+    implementation(libs.litert)
+    implementation("com.google.ai.edge.litertlm:litertlm-android:+")
 
     debugImplementation(libs.androidx.ui.tooling)
 }

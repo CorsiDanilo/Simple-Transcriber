@@ -3,12 +3,26 @@
 
     <!-- Permesso di rete per chiamare le API di Gemini -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- AICore: on-device AI (opzionale, non richiesto) -->
+    <uses-feature android:name="com.google.android.aicore" android:required="false" />
+
+    <!-- Consente di verificare se il pacchetto AICore è installato (Android 11+) -->
+    <queries>
+        <package android:name="com.google.android.aicore" />
+    </queries>
 
     <application
         android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:roundIcon="@drawable/ic_launcher"
         android:label="@string/app_name"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SimpleTranscriberApp">
+        android:theme="@style/Theme.Transcriber"
+        android:largeHeap="true">
 
         <!--
             MainActivity configurata con tema trasparente e senza barra del titolo.
@@ -20,8 +34,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.SimpleTranscriberApp.Translucent"
-            android:excludeFromRecents="true"
+            android:theme="@style/Theme.Transcriber"
+            android:excludeFromRecents="false"
             android:taskAffinity=""
             android:launchMode="singleTask">
 
@@ -42,7 +56,18 @@
                 <data android:mimeType="application/ogg" />
             </intent-filter>
 
+            <!-- Consente all'app di apparire nel launcher per accedere a Impostazioni e Cronologia -->
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
         </activity>
+
+        <service
+            android:name=".TranscriptionService"
+            android:foregroundServiceType="dataSync"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -1,4 +1,4 @@
-package com.example.simpletranscriberapp.data
+package com.anomalyzed.simpletranscriber.data
 
 import android.content.Context
 import androidx.room.*
@@ -21,6 +21,12 @@ interface TranscriptionDao {
 
     @Query("DELETE FROM transcriptions")
     suspend fun clearAll()
+
+    @Query("DELETE FROM transcriptions WHERE id = :id")
+    suspend fun deleteById(id: Int)
+
+    @Query("DELETE FROM transcriptions WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: Set<Int>)
 }
 
 @Database(entities = [TranscriptionItem::class], version = 1)
