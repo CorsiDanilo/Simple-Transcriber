@@ -8,6 +8,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -107,6 +108,14 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
+                    BackHandler {
+                        if (transcriberState is TranscriberUiState.Loading || transcriberState is TranscriberUiState.Streaming) {
+                            moveTaskToBack(true)
+                        } else {
+                            finish()
+                        }
+                    }
+
                     TranscriberScreen(
                         uiState = transcriberState,
                         currentApiKey = settings.apiKey,
@@ -116,7 +125,13 @@ class MainActivity : ComponentActivity() {
                         selectedModelName = selectedModelName,
                         isModelDownloaded = isModelDownloaded,
                         isAICoreAvailable = mainViewModel.isAICoreAvailable,
-                        onDismiss = { finish() },
+                        onDismiss = {
+                            if (transcriberState is TranscriberUiState.Loading || transcriberState is TranscriberUiState.Streaming) {
+                                moveTaskToBack(true)
+                            } else {
+                                finish()
+                            }
+                        },
                         onCopyToClipboard = { text -> copyToClipboard(text) },
                         onUpdateApiKey = { mainViewModel.updateApiKey(it) },
                         onUpdateLanguage = { mainViewModel.updateLanguage(it) },
