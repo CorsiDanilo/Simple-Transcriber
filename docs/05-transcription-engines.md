@@ -51,5 +51,6 @@ This pass is streaming, meaning the user sees the text "evolving" into the final
 
 Transcription is a heavy task. The app uses:
 - **Foreground Service**: To prevent the OS from killing the process.
+- **Foreground Notification**: Updates progress and appears immediately when the dialog is sent to background.
 - **Wakelocks**: (via Service) To keep the CPU active during processing.
 - **Explicit Release**: The `release()` method is called in a `finally` block to ensure native memory used by LiteRT is freed immediately.

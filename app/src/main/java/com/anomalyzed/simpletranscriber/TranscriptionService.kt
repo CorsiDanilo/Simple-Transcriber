@@ -39,7 +39,10 @@ class TranscriptionService : Service() {
 
     companion object {
         const val ACTION_START = "ACTION_START"
+        const val ACTION_REFRESH_NOTIFICATION = "ACTION_REFRESH_NOTIFICATION"
         const val EXTRA_AUDIO_URI = "EXTRA_AUDIO_URI"
+        const val EXTRA_NOTIFICATION_TEXT = "EXTRA_NOTIFICATION_TEXT"
+        const val EXTRA_NOTIFICATION_TITLE = "EXTRA_NOTIFICATION_TITLE"
         const val NOTIFICATION_ID = 1001
         const val CHANNEL_ID = "transcription_channel"
     }
@@ -53,14 +56,44 @@ class TranscriptionService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_START) {
-            val uriString = intent.getStringExtra(EXTRA_AUDIO_URI)
-            if (uriString != null) {
-                val uri = Uri.parse(uriString)
-                startForeground(NOTIFICATION_ID, createNotification("Starting transcription..."))
-                startTranscription(uri)
-            } else {
-                stopSelf()
+        when (intent?.action) {
+            ACTION_START -> {
+                val uriString = intent.getStringExtra(EXTRA_AUDIO_URI)
+                if (uriString != null) {
+                    val uri = Uri.parse(uriString)
+                    startForeground(
+                        NOTIFICATION_ID,
+                        createNotification(
+                            title = "Transcriber",
+                            text = "Starting transcription...",
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent()
+                        )
+                    )
+                    startTranscription(uri)
+                } else {
+                    stopSelf()
+                }
+            }
+            ACTION_REFRESH_NOTIFICATION -> {
+                val textExtra = intent.getStringExtra(EXTRA_NOTIFICATION_TEXT)
+                val titleExtra = intent.getStringExtra(EXTRA_NOTIFICATION_TITLE)
+                val displayText = textExtra?.ifBlank { "Transcribing..." }
+                if (displayText != null) {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        createNotification(
+                            title = titleExtra ?: "Transcriber",
+                            text = displayText,
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent()
+                        )
+                    )
+                } else {
+                    refreshNotificationFromState()
+                }
             }
         }
         return START_NOT_STICKY
@@ -85,19 +118,57 @@ class TranscriptionService : Service() {
                     language = settings.language,
                     onProgress = { progressMessage ->
                         TranscriptionManager.setState(TranscriberUiState.Loading(progressMessage))
-                        updateNotification(progressMessage)
+                        updateNotification(
+                            title = "Transcriber",
+                            text = progressMessage,
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent()
+                        )
                     },
                     onPartialText = { text ->
                         TranscriptionManager.setState(TranscriberUiState.Streaming(text, isRefining = false))
+                        val preview = buildPreview(text)
+                        val displayText = if (preview.isNotEmpty()) {
+                            "Transcribing: $preview"
+                        } else {
+                            "Transcribing..."
+                        }
+                        updateNotification(
+                            title = "Transcriber",
+                            text = displayText,
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent()
+                        )
                     }
                 )
 
                 when (result) {
                     is TranscriptionResult.Success -> {
                         TranscriptionManager.setState(TranscriberUiState.Loading("Refining text..."))
-                        updateNotification("Refining text...")
+                        updateNotification(
+                            title = "Transcriber",
+                            text = "Refining text...",
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent()
+                        )
                         val refinedText = engine.refineText(result.text, settings.language) { text ->
                             TranscriptionManager.setState(TranscriberUiState.Streaming(text, isRefining = true))
+                            val preview = buildPreview(text)
+                            val displayText = if (preview.isNotEmpty()) {
+                                "Refining: $preview"
+                            } else {
+                                "Refining..."
+                            }
+                            updateNotification(
+                                title = "Transcriber",
+                                text = displayText,
+                                ongoing = true,
+                                autoCancel = false,
+                                pendingIntent = createDefaultPendingIntent()
+                            )
                         }
                         
                         db.transcriptionDao().insert(TranscriptionItem(timestamp = System.currentTimeMillis(), text = refinedText))
@@ -164,58 +235,169 @@ class TranscriptionService : Service() {
         }
     }
 
-    private fun createNotification(text: String): android.app.Notification {
+    private fun createPendingIntent(requestCode: Int, flags: Int): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            this.flags = flags
         }
-        val pendingIntent = PendingIntent.getActivity(
-            this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        return PendingIntent.getActivity(
+            this,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    }
 
+    private fun createDefaultPendingIntent(): PendingIntent {
+        return createPendingIntent(0, Intent.FLAG_ACTIVITY_SINGLE_TOP)
+    }
+
+    private fun createCompletionPendingIntent(): PendingIntent {
+        return createPendingIntent(1, Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+    }
+
+    private fun createNotification(
+        title: String,
+        text: String,
+        ongoing: Boolean,
+        autoCancel: Boolean,
+        pendingIntent: PendingIntent
+    ): android.app.Notification {
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Transcriber")
+            .setContentTitle(title)
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(pendingIntent)
-            .setOngoing(true)
+            .setOngoing(ongoing)
+            .setAutoCancel(autoCancel)
             .build()
     }
 
-    private fun updateNotification(text: String) {
+    private fun updateNotification(
+        title: String,
+        text: String,
+        ongoing: Boolean,
+        autoCancel: Boolean,
+        pendingIntent: PendingIntent
+    ) {
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(NOTIFICATION_ID, createNotification(text))
+        manager.notify(
+            NOTIFICATION_ID,
+            createNotification(title, text, ongoing, autoCancel, pendingIntent)
+        )
+    }
+
+    private data class NotificationPayload(
+        val title: String,
+        val text: String,
+        val ongoing: Boolean,
+        val autoCancel: Boolean,
+        val pendingIntent: PendingIntent
+    )
+
+    private fun buildNotificationPayload(state: TranscriberUiState): NotificationPayload? {
+        return when (state) {
+            is TranscriberUiState.Loading -> {
+                val text = state.progressMessage.ifBlank { "Transcribing..." }
+                NotificationPayload(
+                    title = "Transcriber",
+                    text = text,
+                    ongoing = true,
+                    autoCancel = false,
+                    pendingIntent = createDefaultPendingIntent()
+                )
+            }
+            is TranscriberUiState.Streaming -> {
+                val preview = buildPreview(state.partialText)
+                val text = if (state.isRefining) {
+                    if (preview.isNotEmpty()) "Refining: $preview" else "Refining..."
+                } else {
+                    if (preview.isNotEmpty()) "Transcribing: $preview" else "Transcribing..."
+                }
+                NotificationPayload(
+                    title = "Transcriber",
+                    text = text,
+                    ongoing = true,
+                    autoCancel = false,
+                    pendingIntent = createDefaultPendingIntent()
+                )
+            }
+            is TranscriberUiState.Success -> {
+                NotificationPayload(
+                    title = "Transcriber Complete",
+                    text = "Tap to view history",
+                    ongoing = false,
+                    autoCancel = true,
+                    pendingIntent = createCompletionPendingIntent()
+                )
+            }
+            is TranscriberUiState.Error -> {
+                NotificationPayload(
+                    title = "Transcriber Error",
+                    text = state.message,
+                    ongoing = false,
+                    autoCancel = true,
+                    pendingIntent = createDefaultPendingIntent()
+                )
+            }
+            TranscriberUiState.Setup -> null
+        }
+    }
+
+    private fun refreshNotificationFromState() {
+        val payload = buildNotificationPayload(TranscriptionManager.uiState.value) ?: return
+        if (payload.ongoing) {
+            startForeground(
+                NOTIFICATION_ID,
+                createNotification(
+                    title = payload.title,
+                    text = payload.text,
+                    ongoing = payload.ongoing,
+                    autoCancel = payload.autoCancel,
+                    pendingIntent = payload.pendingIntent
+                )
+            )
+        } else {
+            updateNotification(
+                title = payload.title,
+                text = payload.text,
+                ongoing = payload.ongoing,
+                autoCancel = payload.autoCancel,
+                pendingIntent = payload.pendingIntent
+            )
+        }
+    }
+
+    private fun buildPreview(text: String, maxLength: Int = 40): String {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) {
+            return ""
+        }
+
+        return if (trimmed.length > maxLength) {
+            trimmed.substring(0, maxLength) + "..."
+        } else {
+            trimmed
+        }
     }
 
     private fun showSuccessNotification() {
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
-        val pendingIntent = PendingIntent.getActivity(
-            this, 1, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        updateNotification(
+            title = "Transcriber Complete",
+            text = "Tap to view history",
+            ongoing = false,
+            autoCancel = true,
+            pendingIntent = createCompletionPendingIntent()
         )
-
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Transcriber Complete")
-            .setContentText("Tap to view history")
-            .setSmallIcon(android.R.drawable.ic_btn_speak_now)
-            .setContentIntent(pendingIntent)
-            .setAutoCancel(true)
-            .build()
-        
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(NOTIFICATION_ID + 1, notification)
     }
 
     private fun showErrorNotification(msg: String) {
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Transcriber Error")
-            .setContentText(msg)
-            .setSmallIcon(android.R.drawable.ic_dialog_alert)
-            .setAutoCancel(true)
-            .build()
-        
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(NOTIFICATION_ID + 2, notification)
+        updateNotification(
+            title = "Transcriber Error",
+            text = msg,
+            ongoing = false,
+            autoCancel = true,
+            pendingIntent = createDefaultPendingIntent()
+        )
     }
 
     override fun onDestroy() {

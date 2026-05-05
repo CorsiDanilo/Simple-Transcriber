@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.0.1] - 2026-05-05
+### Fixed
+- Foreground notification now appears immediately when the transcription dialog is sent to background.
+- Notification updates across transcription and refinement states without creating duplicates.
+
 ## [1.0.0] - 2026-05-03
 ### Added
 - Initial public release on GitHub.

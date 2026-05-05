@@ -12,7 +12,7 @@ A powerful, privacy-focused Android application for high-quality audio transcrip
 
 - **Hybrid Transcription Engine**: Choose between **LiteRT-LM** for 100% offline, private transcription or **Gemini Cloud** for state-of-the-art accuracy.
 - **Smart Refinement**: Automatically fix grammar, punctuation, and syntax using Gemini AI after the initial transcription.
-- **Background Execution**: Keep your transcriptions running smoothly in the background while you use other apps or navigate away.
+- **Background Execution + Live Notification**: A persistent notification appears when you send the dialog to background and updates with transcription/refinement progress.
 - **On-Device AI Catalog**: Download and manage various LiteRT models (like Gemma 2B/4B) directly within the app.
 - **Transcription History**: Keep track of all your past transcriptions with a searchable local database powered by Room.
 - **In-App Auto Updates**: Always stay up-to-date with the latest features fetching releases directly from GitHub.

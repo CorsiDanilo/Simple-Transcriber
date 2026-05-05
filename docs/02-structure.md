@@ -10,7 +10,7 @@ The project follows a standard Android structure with a focus on logical separat
 - **`MainViewModel.kt`**: Manages the state of the model catalog and settings.
 - **`TranscriberViewModel.kt`**: Manages the state of the active transcription process.
 - **`TranscriptionManager.kt`**: A singleton state holder for the UI to observe the background service state.
-- **`TranscriptionService.kt`**: A foreground service that manages the lifecycle of a transcription task, ensuring it completes even if the UI is closed.
+- **`TranscriptionService.kt`**: A foreground service that manages transcription lifecycle and refreshes the ongoing notification when the UI is dismissed.
 
 ### `com.anomalyzed.simpletranscriber.data`
 

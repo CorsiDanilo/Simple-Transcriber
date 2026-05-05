@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.anomalyzed.simpletranscriber.data.ModelRepository
@@ -67,6 +68,49 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             context.startForegroundService(intent)
         } else {
             context.startService(intent)
+        }
+    }
+
+    fun refreshNotification(context: Context, state: TranscriberUiState) {
+        val displayText = buildNotificationText(state) ?: return
+        val intent = Intent(context, TranscriptionService::class.java).apply {
+            action = TranscriptionService.ACTION_REFRESH_NOTIFICATION
+            putExtra(TranscriptionService.EXTRA_NOTIFICATION_TEXT, displayText)
+            putExtra(TranscriptionService.EXTRA_NOTIFICATION_TITLE, "Transcriber")
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    private fun buildNotificationText(state: TranscriberUiState): String? {
+        return when (state) {
+            is TranscriberUiState.Loading -> state.progressMessage.ifBlank { "Transcribing..." }
+            is TranscriberUiState.Streaming -> {
+                val preview = buildPreview(state.partialText)
+                if (state.isRefining) {
+                    if (preview.isNotEmpty()) "Refining: $preview" else "Refining..."
+                } else {
+                    if (preview.isNotEmpty()) "Transcribing: $preview" else "Transcribing..."
+                }
+            }
+            else -> null
+        }
+    }
+
+    private fun buildPreview(text: String, maxLength: Int = 40): String {
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) {
+            return ""
+        }
+
+        return if (trimmed.length > maxLength) {
+            trimmed.substring(0, maxLength) + "..."
+        } else {
+            trimmed
         }
     }
 

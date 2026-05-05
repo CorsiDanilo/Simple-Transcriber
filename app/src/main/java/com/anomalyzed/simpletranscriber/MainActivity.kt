@@ -108,12 +108,18 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    BackHandler {
+                    val dismissAction: () -> Unit = {
                         if (transcriberState is TranscriberUiState.Loading || transcriberState is TranscriberUiState.Streaming) {
+                            transcriberViewModel.refreshNotification(this@MainActivity, transcriberState)
                             moveTaskToBack(true)
+                            Unit
                         } else {
                             finish()
                         }
+                    }
+
+                    BackHandler {
+                        dismissAction()
                     }
 
                     TranscriberScreen(
@@ -125,13 +131,7 @@ class MainActivity : ComponentActivity() {
                         selectedModelName = selectedModelName,
                         isModelDownloaded = isModelDownloaded,
                         isAICoreAvailable = mainViewModel.isAICoreAvailable,
-                        onDismiss = {
-                            if (transcriberState is TranscriberUiState.Loading || transcriberState is TranscriberUiState.Streaming) {
-                                moveTaskToBack(true)
-                            } else {
-                                finish()
-                            }
-                        },
+                        onDismiss = dismissAction,
                         onCopyToClipboard = { text -> copyToClipboard(text) },
                         onUpdateApiKey = { mainViewModel.updateApiKey(it) },
                         onUpdateLanguage = { mainViewModel.updateLanguage(it) },
