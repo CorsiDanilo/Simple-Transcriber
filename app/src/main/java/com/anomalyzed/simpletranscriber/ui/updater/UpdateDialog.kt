@@ -39,8 +39,7 @@ fun UpdateDialog(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = updateInfo.changelog,
-                    style = MaterialTheme.typography.bodySmall,
+                    text = com.anomalyzed.simpletranscriber.ui.utils.parseMarkdown(updateInfo.changelog),
                     modifier = Modifier.padding(4.dp)
                 )
             }

@@ -17,6 +17,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -35,6 +44,9 @@ import com.anomalyzed.simpletranscriber.ui.updater.UpdateDialog
 import android.app.DownloadManager
 import android.os.Environment
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -63,8 +75,35 @@ class MainActivity : ComponentActivity() {
             val catalogError by mainViewModel.catalogError.collectAsState()
 
             var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
+            var changelogInfo by remember { mutableStateOf<UpdateInfo?>(null) }
             val context = LocalContext.current
             val scope = rememberCoroutineScope()
+            val lifecycleOwner = LocalLifecycleOwner.current
+
+            DisposableEffect(lifecycleOwner) {
+                val observer = LifecycleEventObserver { _, event ->
+                    if (event == Lifecycle.Event.ON_RESUME) {
+                        scope.launch {
+                            try {
+                                val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                                val currentVersion = packageInfo.versionName ?: "1.0.0"
+                                
+                                val updater = AppUpdater()
+                                val info = updater.checkForUpdate(currentVersion)
+                                if (info.updateAvailable) {
+                                    updateInfo = info
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }
+                lifecycleOwner.lifecycle.addObserver(observer)
+                onDispose {
+                    lifecycleOwner.lifecycle.removeObserver(observer)
+                }
+            }
 
             LaunchedEffect(Unit) {
                 scope.launch {
@@ -75,15 +114,6 @@ class MainActivity : ComponentActivity() {
                             if (file.isFile && file.name.endsWith(".apk") && file.name.startsWith("transcriber-")) {
                                 file.delete()
                             }
-                        }
-
-                        val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-                        val currentVersion = packageInfo.versionName ?: "1.0.0"
-                        
-                        val updater = AppUpdater()
-                        val info = updater.checkForUpdate(currentVersion)
-                        if (info.updateAvailable) {
-                            updateInfo = info
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
@@ -176,7 +206,46 @@ class MainActivity : ComponentActivity() {
                                     onUpdateTranscriptionEngine = { mainViewModel.updateTranscriptionEngine(it) },
                                     onUpdateApiKey = { mainViewModel.updateApiKey(it) },
                                     onUpdateSelectedCloudModel = { mainViewModel.updateSelectedCloudModel(it) },
-                                    onNavigateToModelManager = { navController.navigate("model_manager") }
+                                    onNavigateToModelManager = { navController.navigate("model_manager") },
+                                    onCheckForUpdates = {
+                                        scope.launch {
+                                            try {
+                                                Toast.makeText(context, "Checking for updates...", Toast.LENGTH_SHORT).show()
+                                                val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                                                val currentVersion = packageInfo.versionName ?: "1.0.0"
+                                                
+                                                val updater = AppUpdater()
+                                                val info = updater.checkForUpdate(currentVersion)
+                                                if (info.updateAvailable) {
+                                                    updateInfo = info
+                                                } else {
+                                                    Toast.makeText(context, "App is already up to date", Toast.LENGTH_SHORT).show()
+                                                }
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Failed to check for updates", Toast.LENGTH_SHORT).show()
+                                                e.printStackTrace()
+                                            }
+                                        }
+                                    },
+                                    onViewChangelog = {
+                                        scope.launch {
+                                            try {
+                                                Toast.makeText(context, "Caricamento changelog...", Toast.LENGTH_SHORT).show()
+                                                val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                                                val currentVersion = packageInfo.versionName ?: "1.0.0"
+                                                val updater = AppUpdater()
+                                                val info = updater.checkForUpdate(currentVersion)
+                                                if (info.changelog.isNotBlank()) {
+                                                    changelogInfo = info
+                                                } else {
+                                                    Toast.makeText(context, "Impossibile caricare il changelog.", Toast.LENGTH_SHORT).show()
+                                                }
+                                            } catch (e: Exception) {
+                                                Toast.makeText(context, "Errore nel caricamento", Toast.LENGTH_SHORT).show()
+                                                e.printStackTrace()
+                                            }
+                                        }
+                                    }
                                 )
                             }
                             composable("model_manager") {
@@ -210,12 +279,38 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+
+                changelogInfo?.let { info ->
+                    AlertDialog(
+                        onDismissRequest = { changelogInfo = null },
+                        title = { Text(text = "Changelog ${info.versionName}") },
+                        text = {
+                            Column(
+                                modifier = Modifier.verticalScroll(rememberScrollState())
+                            ) {
+                                Text(
+                                    text = com.anomalyzed.simpletranscriber.ui.utils.parseMarkdown(info.changelog)
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { changelogInfo = null }) {
+                                Text("Chiudi")
+                            }
+                        }
+                    )
+                }
             }
         }
     }
 
     private fun downloadUpdate(url: String, versionName: String) {
         try {
+            val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+            if (dir != null && !dir.exists()) {
+                dir.mkdirs()
+            }
+
             val request = DownloadManager.Request(Uri.parse(url))
                 .setTitle("Aggiornamento Transcriber")
                 .setDescription("Scaricando la versione $versionName")

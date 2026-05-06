@@ -15,7 +15,7 @@ A powerful, privacy-focused Android application for high-quality audio transcrip
 - **Background Execution + Live Notification**: A persistent notification appears when you send the dialog to background and updates with transcription/refinement progress.
 - **On-Device AI Catalog**: Download and manage various LiteRT models (like Gemma 2B/4B) directly within the app.
 - **Transcription History**: Keep track of all your past transcriptions with a searchable local database powered by Room.
-- **In-App Auto Updates**: Always stay up-to-date with the latest features fetching releases directly from GitHub.
+- **In-App Auto Updates**: Always stay up-to-date with the latest features fetching releases directly from GitHub. Now includes manual update checks and a built-in markdown changelog viewer!
 - **Material You Design**: A modern, dynamic interface built with Jetpack Compose that respects your system theme.
 - **Privacy First**: Choose on-device models to ensure your audio never leaves your phone.
 

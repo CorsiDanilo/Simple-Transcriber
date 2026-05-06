@@ -41,7 +41,9 @@ fun SettingsScreen(
     onUpdateTranscriptionEngine: (String) -> Unit,
     onUpdateApiKey: (String) -> Unit,
     onUpdateSelectedCloudModel: (String) -> Unit,
-    onNavigateToModelManager: () -> Unit
+    onNavigateToModelManager: () -> Unit,
+    onCheckForUpdates: () -> Unit,
+    onViewChangelog: () -> Unit
 ) {
     var isApiKeyVisible by remember { mutableStateOf(false) }
 
@@ -200,7 +202,22 @@ fun SettingsScreen(
                 }
             }
 
-
+            // ── Updates ──
+            SettingSection("App Updates") {
+                SettingItem(
+                    icon = Icons.Default.SystemUpdate,
+                    title = "Check for Updates",
+                    subtitle = "Manually check if a new version is available",
+                    onClick = onCheckForUpdates
+                )
+                HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
+                SettingItem(
+                    icon = Icons.Default.Article,
+                    title = "View Changelog",
+                    subtitle = "See what's new in recent releases",
+                    onClick = onViewChangelog
+                )
+            }
         }
     }
 }
@@ -249,7 +266,7 @@ private fun EngineOption(
         }
         RadioButton(
             selected = isSelected,
-            onClick = if (isEnabled) onClick else null,
+            onClick = null,
             colors = RadioButtonDefaults.colors(
                 selectedColor = Gold,
                 unselectedColor = if (isEnabled) Color.Gray else Color.Gray.copy(alpha = 0.3f)
@@ -264,7 +281,7 @@ fun SettingSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
         SettingsCard {
-            Column { // Corretto: rimosso content=content
+            Column(modifier = Modifier.fillMaxWidth()) { // Corretto: rimosso content=content
                 content()
             }
         }
