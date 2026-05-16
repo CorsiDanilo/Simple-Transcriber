@@ -63,8 +63,8 @@ fun HistoryScreen(
     itemToDelete?.let { item ->
         AlertDialog(
             onDismissRequest = { itemToDelete = null },
-            title = { Text("Elimina trascrizione") },
-            text = { Text("Vuoi eliminare questa trascrizione? L'operazione è irreversibile.") },
+            title = { Text("Delete Transcription") },
+            text = { Text("Do you want to delete this transcription? This action cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -72,12 +72,12 @@ fun HistoryScreen(
                         itemToDelete = null
                     }
                 ) {
-                    Text("Elimina", color = MaterialTheme.colorScheme.error)
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { itemToDelete = null }) {
-                    Text("Annulla")
+                    Text("Cancel")
                 }
             }
         )
@@ -87,8 +87,8 @@ fun HistoryScreen(
     if (showBulkDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showBulkDeleteConfirm = false },
-            title = { Text("Elimina trascrizioni") },
-            text = { Text("Vuoi eliminare ${selectedIds.size} trascrizioni selezionate? L'operazione è irreversibile.") },
+            title = { Text("Delete Transcriptions") },
+            text = { Text("Do you want to delete ${selectedIds.size} selected transcriptions? This action cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -97,12 +97,12 @@ fun HistoryScreen(
                         showBulkDeleteConfirm = false
                     }
                 ) {
-                    Text("Elimina", color = MaterialTheme.colorScheme.error)
+                    Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showBulkDeleteConfirm = false }) {
-                    Text("Annulla")
+                    Text("Cancel")
                 }
             }
         )
@@ -113,10 +113,10 @@ fun HistoryScreen(
             if (isSelectionMode) {
                 // Selection mode top bar
                 TopAppBar(
-                    title = { Text("${selectedIds.size} selezionate", fontWeight = FontWeight.Bold) },
+                    title = { Text("${selectedIds.size} selected", fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { selectedIds = emptySet() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Annulla selezione")
+                            Icon(Icons.Default.Close, contentDescription = "Clear selection")
                         }
                     },
                     actions = {
@@ -124,7 +124,7 @@ fun HistoryScreen(
                         IconButton(onClick = {
                             selectedIds = filteredItems.map { it.id }.toSet()
                         }) {
-                            Icon(Icons.Default.SelectAll, contentDescription = "Seleziona tutte")
+                            Icon(Icons.Default.SelectAll, contentDescription = "Select all")
                         }
                         // Copy selected to clipboard
                         IconButton(onClick = {
@@ -134,13 +134,13 @@ fun HistoryScreen(
                             onCopyToClipboard(combined)
                             selectedIds = emptySet()
                         }) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copia selezionate")
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy selected")
                         }
                         // Delete selected
                         IconButton(onClick = { showBulkDeleteConfirm = true }) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Elimina selezionate",
+                                contentDescription = "Delete selected",
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -174,7 +174,7 @@ fun HistoryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Cerca trascrizioni...") },
+                    placeholder = { Text("Search transcriptions...") },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -286,13 +286,13 @@ fun HistoryItemCard(
                 when (direction) {
                     SwipeToDismissBoxValue.StartToEnd -> Icon(
                         imageVector = Icons.Default.ContentCopy,
-                        contentDescription = "Copia",
+                        contentDescription = "Copy",
                         tint = Color.White,
                         modifier = Modifier.scale(scale)
                     )
                     SwipeToDismissBoxValue.EndToStart -> Icon(
                         imageVector = Icons.Default.Delete,
-                        contentDescription = "Elimina",
+                        contentDescription = "Delete",
                         tint = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.scale(scale)
                     )

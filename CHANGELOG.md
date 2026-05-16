@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.0.3] - 2026-05-16
+### Added
+- Multiple concurrent transcriptions now create independent notifications, each tracking its own progress and final state.
+- Notification taps reopen the transcription dialog for the selected transcription only.
+- Ongoing transcriptions can be cancelled from both the dialog and the notification.
+- Completed transcription notifications now show the final text and include a Copy action.
+
+### Changed
+- Gemini Cloud transcription now performs transcription and refinement in one multimodal request, avoiding the intermediate raw transcript/refinement flash.
+- Automatic update checks are skipped during share-flow transcription and when using local/on-device engines.
+- The share-flow background action now dismisses only the Transcriber dialog instead of sending the source app to background.
+- User-facing labels and update/history dialogs are now consistently in English.
+
+### Fixed
+- Notification startup is gated on notification permission and channel availability, preventing silent background transcription starts.
+- Foreground notification handling now keeps separate notification state for parallel transcription jobs.
+
 ## [1.0.2] - 2026-05-06
 ### Added
 - Native in-app markdown changelog viewer

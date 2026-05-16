@@ -47,6 +47,11 @@ interface TranscriptionEngine {
     fun displayName(): String
 
     /**
+     * Indica se l'engine restituisce gia' un testo rifinito durante la trascrizione.
+     */
+    fun performsRefinementDuringTranscription(): Boolean = false
+
+    /**
      * Rifinisce il testo trascritto per correggere errori grammaticali o di punteggiatura.
      */
     suspend fun refineText(

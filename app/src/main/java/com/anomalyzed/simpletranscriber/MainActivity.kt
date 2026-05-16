@@ -4,7 +4,9 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -12,6 +14,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.core.app.NotificationManagerCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
@@ -41,7 +44,9 @@ import com.anomalyzed.simpletranscriber.updater.AppUpdater
 import com.anomalyzed.simpletranscriber.updater.UpdateInfo
 import com.anomalyzed.simpletranscriber.updater.DownloadReceiver
 import com.anomalyzed.simpletranscriber.ui.updater.UpdateDialog
+import com.anomalyzed.simpletranscriber.engine.EngineType
 import android.app.DownloadManager
+import android.app.NotificationManager
 import android.os.Environment
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
@@ -52,14 +57,27 @@ import java.io.File
 
 class MainActivity : ComponentActivity() {
 
+    companion object {
+        const val EXTRA_SHOW_TRANSCRIBER_DIALOG = "EXTRA_SHOW_TRANSCRIBER_DIALOG"
+        const val EXTRA_TRANSCRIPTION_ID = "EXTRA_TRANSCRIPTION_ID"
+        const val NO_TRANSCRIPTION_ID = -1L
+        private const val REQUEST_POST_NOTIFICATIONS = 101
+    }
+
     private val mainViewModel: MainViewModel by viewModels()
     private val transcriberViewModel: TranscriberViewModel by viewModels()
     private var isShareFlow by mutableStateOf(false)
+    private var showTranscriberDialog by mutableStateOf(false)
+    private var startTranscriptionAfterNotificationPermission = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         isShareFlow = intent?.action == Intent.ACTION_SEND
+        showTranscriberDialog = intent?.getBooleanExtra(EXTRA_SHOW_TRANSCRIBER_DIALOG, false) == true
+        intent?.getLongExtra(EXTRA_TRANSCRIPTION_ID, NO_TRANSCRIPTION_ID)
+            ?.takeIf { it != NO_TRANSCRIPTION_ID }
+            ?.let { transcriberViewModel.selectTranscription(it) }
 
         // Gestione Intent di condivisione (Transcriber)
         if (savedInstanceState == null && isShareFlow) {
@@ -80,9 +98,12 @@ class MainActivity : ComponentActivity() {
             val scope = rememberCoroutineScope()
             val lifecycleOwner = LocalLifecycleOwner.current
 
-            DisposableEffect(lifecycleOwner) {
+            DisposableEffect(lifecycleOwner, isShareFlow, settings.transcriptionEngine) {
                 val observer = LifecycleEventObserver { _, event ->
-                    if (event == Lifecycle.Event.ON_RESUME) {
+                    val shouldCheckForUpdates =
+                        !isShareFlow && EngineType.fromKey(settings.transcriptionEngine) == EngineType.CLOUD
+
+                    if (event == Lifecycle.Event.ON_RESUME && shouldCheckForUpdates) {
                         scope.launch {
                             try {
                                 val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -130,10 +151,10 @@ class MainActivity : ComponentActivity() {
                                     selectedModelInfo?.status == com.anomalyzed.simpletranscriber.data.ModelStatus.Downloaded
 
             TranscriberTheme {
-                if (isShareFlow) {
-                    // In modalita condivisione mostriamo solo il popup del transcriber.
+                if (isShareFlow || showTranscriberDialog) {
+                    // In modalita condivisione/notifica mostriamo solo il popup del transcriber.
                     LaunchedEffect(transcriberState) {
-                        if (transcriberState is TranscriberUiState.Success) {
+                        if (isShareFlow && transcriberState is TranscriberUiState.Success) {
                             mainViewModel.saveTranscription((transcriberState as TranscriberUiState.Success).text)
                         }
                     }
@@ -141,11 +162,8 @@ class MainActivity : ComponentActivity() {
                     val dismissAction: () -> Unit = {
                         if (transcriberState is TranscriberUiState.Loading || transcriberState is TranscriberUiState.Streaming) {
                             transcriberViewModel.refreshNotification(this@MainActivity, transcriberState)
-                            moveTaskToBack(true)
-                            Unit
-                        } else {
-                            finish()
                         }
+                        finish()
                     }
 
                     BackHandler {
@@ -163,6 +181,7 @@ class MainActivity : ComponentActivity() {
                         isAICoreAvailable = mainViewModel.isAICoreAvailable,
                         onDismiss = dismissAction,
                         onCopyToClipboard = { text -> copyToClipboard(text) },
+                        onCancelTranscription = { transcriberViewModel.cancelTranscription(this@MainActivity) },
                         onUpdateApiKey = { mainViewModel.updateApiKey(it) },
                         onUpdateLanguage = { mainViewModel.updateLanguage(it) },
                         onUpdateCloudModel = { mainViewModel.updateSelectedCloudModel(it) },
@@ -170,12 +189,7 @@ class MainActivity : ComponentActivity() {
                             mainViewModel.updateTranscriptionEngine(it)
                             transcriberViewModel.clearError()
                         },
-                        onStartTranscription = { 
-                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                                requestPermissions(arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 101)
-                            }
-                            transcriberViewModel.startTranscription(this@MainActivity) 
-                        }
+                        onStartTranscription = { startTranscriptionWithNotificationPermission() }
                     )
                 } else {
                     val navController = rememberNavController()
@@ -230,7 +244,7 @@ class MainActivity : ComponentActivity() {
                                     onViewChangelog = {
                                         scope.launch {
                                             try {
-                                                Toast.makeText(context, "Caricamento changelog...", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Loading changelog...", Toast.LENGTH_SHORT).show()
                                                 val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
                                                 val currentVersion = packageInfo.versionName ?: "1.0.0"
                                                 val updater = AppUpdater()
@@ -238,10 +252,10 @@ class MainActivity : ComponentActivity() {
                                                 if (info.changelog.isNotBlank()) {
                                                     changelogInfo = info
                                                 } else {
-                                                    Toast.makeText(context, "Impossibile caricare il changelog.", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, "Could not load the changelog.", Toast.LENGTH_SHORT).show()
                                                 }
                                             } catch (e: Exception) {
-                                                Toast.makeText(context, "Errore nel caricamento", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, "Loading failed", Toast.LENGTH_SHORT).show()
                                                 e.printStackTrace()
                                             }
                                         }
@@ -264,6 +278,7 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
+
                     }
                 }
 
@@ -295,12 +310,74 @@ class MainActivity : ComponentActivity() {
                         },
                         confirmButton = {
                             TextButton(onClick = { changelogInfo = null }) {
-                                Text("Chiudi")
+                                Text("Close")
                             }
                         }
                     )
                 }
             }
+        }
+    }
+
+    private fun startTranscriptionWithNotificationPermission() {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            startTranscriptionAfterNotificationPermission = true
+            requestPermissions(
+                arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
+                REQUEST_POST_NOTIFICATIONS
+            )
+            return
+        }
+
+        if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
+            Toast.makeText(
+                this,
+                "Enable notifications to run transcription in background.",
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            val channel = notificationManager?.getNotificationChannel(TranscriptionService.CHANNEL_ID)
+            if (channel?.importance == NotificationManager.IMPORTANCE_NONE) {
+                Toast.makeText(
+                    this,
+                    "Enable the Transcriber notification channel to run transcription in background.",
+                    Toast.LENGTH_LONG
+                ).show()
+                return
+            }
+        }
+
+        transcriberViewModel.startTranscription(this)
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode != REQUEST_POST_NOTIFICATIONS || !startTranscriptionAfterNotificationPermission) {
+            return
+        }
+
+        startTranscriptionAfterNotificationPermission = false
+        val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            startTranscriptionWithNotificationPermission()
+        } else {
+            Toast.makeText(
+                this,
+                "Notification permission is required to run transcription in background.",
+                Toast.LENGTH_LONG
+            ).show()
         }
     }
 
@@ -312,8 +389,8 @@ class MainActivity : ComponentActivity() {
             }
 
             val request = DownloadManager.Request(Uri.parse(url))
-                .setTitle("Aggiornamento Transcriber")
-                .setDescription("Scaricando la versione $versionName")
+                .setTitle("Transcriber Update")
+                .setDescription("Downloading version $versionName")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "transcriber-$versionName.apk")
                 .setAllowedOverMetered(true)
@@ -323,7 +400,7 @@ class MainActivity : ComponentActivity() {
             DownloadReceiver.enqueuedDownloadId = downloadManager.enqueue(request)
         } catch (e: Exception) {
             e.printStackTrace()
-            Toast.makeText(this, "Errore nel download: ${e.message}", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Download error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
 
@@ -331,6 +408,10 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         isShareFlow = intent.action == Intent.ACTION_SEND
+        showTranscriberDialog = intent.getBooleanExtra(EXTRA_SHOW_TRANSCRIBER_DIALOG, false)
+        intent.getLongExtra(EXTRA_TRANSCRIPTION_ID, NO_TRANSCRIPTION_ID)
+            .takeIf { it != NO_TRANSCRIPTION_ID }
+            ?.let { transcriberViewModel.selectTranscription(it) }
         if (isShareFlow) {
             handleIncomingIntent()
         }

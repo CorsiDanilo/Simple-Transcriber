@@ -1,36 +1,47 @@
-# 04 - Deployment & CI/CD 🚀
+# 04 - Deployment and CI/CD
 
-Transcriber uses GitHub Actions to automate the release process.
+Transcriber uses GitHub Actions to build signed APK releases when version tags are pushed.
 
 ## GitHub Actions Pipeline
 
-The workflow defined in `.github/workflows/release.yml` is triggered when:
-- A new **Tag** starting with `v` (e.g., `v1.0.0`) is pushed.
-- A **Release** is manually created or published in the GitHub UI.
+The release workflow in `.github/workflows/release.yml` is triggered when a tag starting with `v` is pushed, for example `v1.0.3`.
 
-### Pipeline Steps
+Typical steps:
 
-1. **Checkout**: Fetches the latest code.
-2. **Setup Java**: Configures JDK 17.
-3. **Build**: Runs `./gradlew assembleRelease`.
-4. **Sign**: Uses the `r0adkll/sign-android-release` action to sign the APK using secrets stored in the repository.
-5. **Release**: Uploads the signed APK to the GitHub Release page and generates automated release notes from `CHANGELOG.md`.
+1. Checkout the repository.
+2. Set up JDK 17.
+3. Run the Gradle release build.
+4. Sign the APK using repository secrets.
+5. Publish the APK and release notes to GitHub Releases.
 
 ## Required Repository Secrets
 
-To make the pipeline work, the following secrets must be added to the GitHub repository (*Settings > Secrets and variables > Actions*):
-
 | Secret Name | Description |
-|-------------|-------------|
-| `SIGNING_KEY` | The base64 encoded content of your `.jks` keystore file. |
-| `ALIAS` | The alias of your signing key. |
-| `KEY_STORE_PASSWORD` | The password for the keystore. |
-| `KEY_PASSWORD` | The password for the specific key. |
+| --- | --- |
+| `SIGNING_KEY` | Base64-encoded `.jks` keystore content. |
+| `ALIAS` | Signing key alias. |
+| `KEY_STORE_PASSWORD` | Keystore password. |
+| `KEY_PASSWORD` | Key password. |
 
 ## Versioning
 
-The version name and code are managed in `app/build.gradle.kts`. When releasing a new version:
-1. Increment `versionCode` and `versionName`.
-2. Update `CHANGELOG.md`.
-3. Commit and push.
-4. Create a new tag: `git tag v1.0.1 && git push origin v1.0.1`.
+The Android version is managed in `app/build.gradle.kts`:
+
+- `versionCode`: integer used by Android for upgrade ordering.
+- `versionName`: human-readable app version.
+
+For a release:
+
+1. Increment `versionCode`.
+2. Increment `versionName`.
+3. Update `CHANGELOG.md`.
+4. Update documentation and README when behavior changes.
+5. Commit changes.
+6. Tag the commit, for example `git tag v1.0.3`.
+7. Push the branch and tag.
+
+## Current Release
+
+- Version: `1.0.3`
+- Version code: `4`
+- Tag: `v1.0.3`

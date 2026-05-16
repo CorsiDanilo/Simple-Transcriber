@@ -2,44 +2,34 @@
   <img src="assets/images/app_icon.png" width="160" height="160" alt="Transcriber Icon">
 </p>
 
-# Transcriber 🎙️✨
+# Transcriber
 
-A powerful, privacy-focused Android application for high-quality audio transcription and text refinement. **Transcriber** combines the speed of on-device AI with the power of the cloud to deliver accurate results for any situation.
+A privacy-focused Android application for high-quality audio transcription and text refinement. Transcriber lets users choose between offline on-device processing with LiteRT-LM and cloud transcription with Gemini.
 
----
+## Features
 
-## 🚀 Features
+- **Hybrid transcription engines**: choose Gemini Cloud for high accuracy or LiteRT-LM for private offline transcription.
+- **Single-pass Gemini refinement**: Gemini Cloud now transcribes and refines in one multimodal request, so the app returns the final cleaned text without showing a raw intermediate transcript.
+- **Multiple concurrent transcriptions**: each transcription gets its own foreground notification and progress state.
+- **Notification controls**: reopen a specific transcription from its notification, cancel an ongoing job, or copy the final transcript directly from the completed notification.
+- **Background execution**: send only the Transcriber dialog to background while the source app stays in the foreground.
+- **Transcription history**: store, search, copy, and delete previous transcriptions locally with Room.
+- **On-device model manager**: download, select, and delete LiteRT-LM models inside the app.
+- **In-app updates**: check GitHub releases manually, view markdown changelogs, and install APK updates.
+- **English UI labels**: dialogs, history actions, updater text, and notification actions use consistent English wording.
 
-- **Hybrid Transcription Engine**: Choose between **LiteRT-LM** for 100% offline, private transcription or **Gemini Cloud** for state-of-the-art accuracy.
-- **Smart Refinement**: Automatically fix grammar, punctuation, and syntax using Gemini AI after the initial transcription.
-- **Background Execution + Live Notification**: A persistent notification appears when you send the dialog to background and updates with transcription/refinement progress.
-- **On-Device AI Catalog**: Download and manage various LiteRT models (like Gemma 2B/4B) directly within the app.
-- **Transcription History**: Keep track of all your past transcriptions with a searchable local database powered by Room.
-- **In-App Auto Updates**: Always stay up-to-date with the latest features fetching releases directly from GitHub. Now includes manual update checks and a built-in markdown changelog viewer!
-- **Material You Design**: A modern, dynamic interface built with Jetpack Compose that respects your system theme.
-- **Privacy First**: Choose on-device models to ensure your audio never leaves your phone.
+## Tech Stack
 
----
+| Category | Technology |
+| --- | --- |
+| UI | Jetpack Compose / Material 3 |
+| Cloud AI | Google Generative AI SDK (Gemini) |
+| On-device AI | LiteRT / LiteRT-LM |
+| Database | Room |
+| Preferences | Jetpack DataStore |
+| Architecture | MVVM with a foreground transcription service |
 
-## 🛠️ Tech Stack
-
-This project leverages the latest Android development technologies:
-
-| Category          | Technology                                                                 |
-|-------------------|---------------------------------------------------------------------------|
-| **UI Framework**  | Jetpack Compose / Material 3 (Material You)                               |
-| **AI (Cloud)**    | Google Generative AI SDK (Gemini)                                         |
-| **AI (On-Device)** | LiteRT (formerly TensorFlow Lite) / LiteRT-LM                             |
-| **Local Database**| Room Persistence Library                                                  |
-| **Data Persistence**| Jetpack DataStore (Preferences)                                         |
-| **Networking**    | OkHttp & Kotlin Serialization                                             |
-| **Architecture**  | MVVM (Model-View-ViewModel)                                               |
-
----
-
-## 🏛️ Architecture
-
-The app is built with a focus on modularity and separation of concerns:
+## Architecture
 
 ```mermaid
 graph TD
@@ -49,49 +39,52 @@ graph TD
     Service --> Engines[Engines: Cloud / LiteRT / AICore]
     Service --> DB[(Room Database)]
     Engines --> Gemini[Gemini API]
-    Engines --> LiteRT[Local TFLite Models]
+    Engines --> LiteRT[Local LiteRT-LM Models]
 ```
 
-- **UI**: Reactive components built with Compose.
-- **Service**: Foreground service to handle long-running transcription tasks even when the app is in the background.
-- **Engines**: Abstraction layer allowing seamless switching between different transcription technologies.
-- **Data**: Centralized management of settings (DataStore) and history (Room).
+- **UI**: Compose screens and dialogs for setup, progress, history, settings, and model management.
+- **TranscriptionManager**: shared in-memory state for active and completed transcription jobs.
+- **TranscriptionService**: foreground service that runs one or more transcription jobs and owns their notifications.
+- **Engines**: strategy implementations for Gemini Cloud, LiteRT-LM, and future AICore support.
+- **Data layer**: Room for history and DataStore for preferences.
 
----
-
-## 📥 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- Android Studio **Ladybug** or newer.
-- Android SDK **35**.
-- A device or emulator running **Android 8.0 (API 26)** or higher.
+- Android Studio Ladybug or newer.
+- Android SDK 35.
+- A device or emulator running Android 8.0 (API 26) or higher.
 
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/CorsiDanilo/simple-transcription-app
    ```
+
 2. Open the project in Android Studio.
-3. Add your Gemini API Key to `local.properties` (optional, for cloud features):
+3. Add your Gemini API key to `local.properties` if you want cloud features:
+
    ```properties
    GEMINI_API_KEY=your_api_key_here
    ```
-4. Sync the project with Gradle files.
-5. Build and run it on your device.
 
----
+4. Sync Gradle and run the app.
 
-## 📸 Usage
+## Usage
 
-1. **Configure**: Enter your Gemini API Key in the settings or download a local model.
-2. **Start**: Tap "Start Transcription" and select an audio file or share one to the app.
-3. **Wait**: The app will process the audio. If enabled, it will also perform a "Refinement" pass to improve text quality.
-4. **History**: Access previous transcriptions from the main screen, copy them, or delete them.
+1. Choose an engine in Settings: Gemini Cloud, LiteRT-LM, or AICore where available.
+2. Share an audio file to Transcriber or start from the app flow.
+3. Watch progress in the dialog or notification.
+4. Run several transcriptions in parallel when needed; each job has its own notification.
+5. Copy the completed text from the dialog, history, or completion notification.
 
----
+## Release Process
 
-## 📄 License
+Releases are versioned in `app/build.gradle.kts` and documented in `CHANGELOG.md`. Pushing a tag such as `v1.0.3` triggers the GitHub Actions release pipeline.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## License
+
+This project is licensed under the MIT License.

@@ -32,9 +32,10 @@ class CloudEngine(
             val requestContent = content {
                 blob(mimeType, audioBytes)
                 text(
-                    "Transcribe this audio exactly word-for-word and translate it into $language. " +
-                    "Respond ONLY with the text in $language language, no introductory or concluding sentences. " +
-                    "Maintain the original structure and tone."
+                    "Transcribe this audio faithfully and translate it into $language. " +
+                    "Then refine the transcript by fixing punctuation, syntax, grammar, and obvious transcription errors " +
+                    "without changing the original meaning, structure, or tone. " +
+                    "Respond ONLY with the final refined text in $language language, no introductory or concluding sentences."
                 )
             }
 
@@ -59,6 +60,8 @@ class CloudEngine(
     override fun isAvailable(): Boolean = apiKey.isNotBlank()
 
     override fun displayName(): String = "Cloud ($modelName)"
+
+    override fun performsRefinementDuringTranscription(): Boolean = true
 
     override suspend fun refineText(
         text: String, 

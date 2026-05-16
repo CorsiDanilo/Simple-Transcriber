@@ -1,10 +1,10 @@
-# 05 - Transcription Engines ⚙️🧠
+# 05 - Transcription Engines
 
-The heart of the application is its multi-engine transcription strategy.
+The application uses a strategy interface so transcription backends can be swapped without changing the UI or service orchestration.
 
 ## `TranscriptionEngine` Interface
 
-Every engine must implement the `TranscriptionEngine` interface:
+Every engine implements:
 
 ```kotlin
 interface TranscriptionEngine {
@@ -15,6 +15,10 @@ interface TranscriptionEngine {
         onProgress: (String) -> Unit,
         onPartialText: (String) -> Unit
     ): TranscriptionResult
+
+    fun isAvailable(): Boolean
+    fun displayName(): String
+    fun performsRefinementDuringTranscription(): Boolean
 
     suspend fun refineText(
         text: String,
@@ -29,28 +33,46 @@ interface TranscriptionEngine {
 ## Available Engines
 
 ### 1. Gemini Cloud Engine (`CloudEngine`)
-- **Backend**: Google Generative AI (Gemini Flash/Pro).
-- **Pros**: extremely high accuracy, handles long audio well, provides state-of-the-art text refinement.
-- **Cons**: Requires internet connection and an API key.
+
+- **Backend**: Google Generative AI SDK.
+- **Strengths**: High accuracy, handles audio directly, and can return refined text in one multimodal request.
+- **Tradeoff**: Requires internet access and a Gemini API key.
+- **Refinement model**: `performsRefinementDuringTranscription()` returns `true`, so the service does not run a separate refinement pass.
 
 ### 2. LiteRT On-Device Engine (`LiteRTEngine`)
-- **Backend**: LiteRT (TensorFlow Lite) with Large Language Model optimization.
-- **Pros**: 100% private, works offline, no API costs.
-- **Cons**: Higher battery/RAM usage, accuracy depends on the model size (2B vs 4B).
 
-## The Refinement Pass
+- **Backend**: LiteRT-LM models stored on device.
+- **Strengths**: Offline processing, stronger privacy, no cloud API cost.
+- **Tradeoff**: Higher RAM, CPU, battery, and model storage requirements.
+- **Refinement model**: transcription and refinement are separate local steps.
 
-After the initial transcription, the app can run a "Refinement" pass. This is currently implemented using the Gemini API. It takes the raw (often messy) transcript and fixes:
-- Punctuation and capitalization.
-- Common transcription errors.
-- Grammatical structure.
+### 3. AICore Engine (`AICoreEngine`)
 
-This pass is streaming, meaning the user sees the text "evolving" into the final corrected version in real-time.
+- Placeholder for future Android system-level on-device AI support.
+
+## Service Orchestration
+
+`TranscriptionService` owns the lifecycle of transcription jobs. Each started job receives a unique `transcriptionId` and independent notification id.
+
+For each job, the service:
+
+1. Creates an immediate foreground notification.
+2. Reads the shared audio URI.
+3. Creates the selected engine.
+4. Streams progress and partial text to `TranscriptionManager`.
+5. Updates only that job's notification.
+6. Saves the final text to Room on success.
+7. Releases engine resources in `finally`.
+
+## Notifications
+
+Each transcription has its own notification:
+
+- Ongoing notifications show progress and include Cancel.
+- Tapping a notification reopens the dialog for that specific transcription.
+- Completed notifications show the final transcript, use expanded big text, and include Copy.
+- Cancelling one transcription does not cancel other active jobs.
 
 ## Resource Management
 
-Transcription is a heavy task. The app uses:
-- **Foreground Service**: To prevent the OS from killing the process.
-- **Foreground Notification**: Updates progress and appears immediately when the dialog is sent to background.
-- **Wakelocks**: (via Service) To keep the CPU active during processing.
-- **Explicit Release**: The `release()` method is called in a `finally` block to ensure native memory used by LiteRT is freed immediately.
+Parallel jobs are supported, but LiteRT jobs can be expensive because each job may initialize model resources. The service keeps foreground status while any job is active and stops itself when all active jobs finish or are cancelled.

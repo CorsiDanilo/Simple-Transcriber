@@ -34,6 +34,7 @@ fun TranscriberScreen(
     onDismiss: () -> Unit,
     onCopyToClipboard: (String) -> Unit,
     onStartTranscription: () -> Unit,
+    onCancelTranscription: () -> Unit,
     onUpdateApiKey: (String) -> Unit,
     onUpdateLanguage: (String) -> Unit,
     onUpdateCloudModel: (String) -> Unit,
@@ -110,6 +111,19 @@ fun TranscriberScreen(
                 }
 
                 if (uiState is TranscriberUiState.Loading || uiState is TranscriberUiState.Streaming) {
+                    OutlinedButton(
+                        onClick = onCancelTranscription,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Cancel, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Cancel Transcription")
+                    }
+
                     Button(
                         onClick = onDismiss,
                         modifier = Modifier.fillMaxWidth(),

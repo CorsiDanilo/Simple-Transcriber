@@ -47,10 +47,12 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
 
     // Variabili temporanee per l'audio in attesa
     private var pendingAudioUri: Uri? = null
+    private var activeTranscriptionId: Long? = null
 
     fun setPendingAudio(uri: Uri) {
         pendingAudioUri = uri
-        TranscriptionManager.setState(TranscriberUiState.Setup)
+        activeTranscriptionId = null
+        TranscriptionManager.clearState()
     }
 
     /**
@@ -58,10 +60,14 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
      */
     fun startTranscription(context: Context) {
         val uri = pendingAudioUri ?: return
+        val transcriptionId = System.currentTimeMillis() * 1_000 + (System.nanoTime() % 1_000)
+        activeTranscriptionId = transcriptionId
+        TranscriptionManager.setActiveTask(transcriptionId)
         
         val intent = Intent(context, TranscriptionService::class.java).apply {
             action = TranscriptionService.ACTION_START
             putExtra(TranscriptionService.EXTRA_AUDIO_URI, uri.toString())
+            putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, transcriptionId)
         }
         
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -71,10 +77,17 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    fun selectTranscription(id: Long) {
+        activeTranscriptionId = id
+        TranscriptionManager.setActiveTask(id)
+    }
+
     fun refreshNotification(context: Context, state: TranscriberUiState) {
         val displayText = buildNotificationText(state) ?: return
+        val transcriptionId = activeTranscriptionId ?: TranscriptionManager.currentTaskId() ?: return
         val intent = Intent(context, TranscriptionService::class.java).apply {
             action = TranscriptionService.ACTION_REFRESH_NOTIFICATION
+            putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, transcriptionId)
             putExtra(TranscriptionService.EXTRA_NOTIFICATION_TEXT, displayText)
             putExtra(TranscriptionService.EXTRA_NOTIFICATION_TITLE, "Transcriber")
         }
@@ -84,6 +97,15 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         } else {
             context.startService(intent)
         }
+    }
+
+    fun cancelTranscription(context: Context) {
+        val transcriptionId = activeTranscriptionId ?: TranscriptionManager.currentTaskId() ?: return
+        val intent = Intent(context, TranscriptionService::class.java).apply {
+            action = TranscriptionService.ACTION_CANCEL
+            putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, transcriptionId)
+        }
+        context.startService(intent)
     }
 
     private fun buildNotificationText(state: TranscriberUiState): String? {

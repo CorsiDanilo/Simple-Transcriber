@@ -1,46 +1,44 @@
-# 02 - Project Structure 🏗️
+# 02 - Project Structure
 
-The project follows a standard Android structure with a focus on logical separation of the transcription logic from the UI.
+The project follows a standard Android layout with a focus on separating UI, transcription orchestration, engine implementations, and persistence.
 
 ## Package Breakdown
 
 ### `com.anomalyzed.simpletranscriber`
 
-- **`MainActivity.kt`**: The entry point of the application. Handles UI navigation and the main Compose container.
-- **`MainViewModel.kt`**: Manages the state of the model catalog and settings.
-- **`TranscriberViewModel.kt`**: Manages the state of the active transcription process.
-- **`TranscriptionManager.kt`**: A singleton state holder for the UI to observe the background service state.
-- **`TranscriptionService.kt`**: A foreground service that manages transcription lifecycle and refreshes the ongoing notification when the UI is dismissed.
+- **`MainActivity.kt`**: Entry point, Compose container, share-flow handling, notification re-entry handling, and update dialogs.
+- **`MainViewModel.kt`**: Settings, history, model catalog, and update-related UI state.
+- **`TranscriberViewModel.kt`**: Starts transcription jobs, selects active jobs, refreshes notifications, and sends cancel commands.
+- **`TranscriptionManager.kt`**: In-memory state holder for active/completed transcription tasks. It tracks a selected task plus a map of task states keyed by transcription id.
+- **`TranscriptionService.kt`**: Foreground service that runs transcription jobs, supports multiple concurrent tasks, owns per-task notifications, and handles notification actions such as Cancel and Copy.
 
 ### `com.anomalyzed.simpletranscriber.data`
 
-- **`AppDatabase.kt`**: Room database configuration.
-- **`TranscriptionDao.kt` / `TranscriptionItem.kt`**: Data access object and entity for the transcription history.
-- **`PreferenceManager.kt`**: Manages user settings using Jetpack DataStore.
-- **`ModelRepository.kt`**: Handles fetching the model catalog from GitHub and downloading LiteRT models.
-- **`ModelInfo.kt`**: Data classes for model metadata.
+- **`TranscriptionData.kt`**: Room database, DAO, and entity definitions for transcription history.
+- **`PreferenceManager.kt`**: User settings backed by Jetpack DataStore.
+- **`ModelRepository.kt`**: Model catalog metadata, model path resolution, model download, deletion, and storage checks.
+- **`ModelInfo.kt`**: Model metadata and download status data classes.
 
 ### `com.anomalyzed.simpletranscriber.engine`
 
-This package contains the abstraction for transcription:
-
-- **`TranscriptionEngine.kt`**: Interface defining the core capabilities (transcribe, refine, release).
-- **`CloudEngine.kt`**: Implementation using Google's Gemini API.
-- **`LiteRTEngine.kt`**: Implementation using on-device LiteRT-LM.
-- **`AICoreEngine.kt`**: (Placeholder/Future) Implementation using Google's system-level AICore.
+- **`TranscriptionEngine.kt`**: Engine strategy interface for transcription, optional refinement, capability flags, and release lifecycle.
+- **`CloudEngine.kt`**: Gemini Cloud implementation. It performs transcription and refinement in one request.
+- **`LiteRTEngine.kt`**: On-device LiteRT-LM implementation with audio preprocessing, segmentation, and local refinement.
+- **`AICoreEngine.kt`**: Placeholder for Android system-level AICore support.
 
 ### `com.anomalyzed.simpletranscriber.ui`
 
-- **`screens/`**: Individual Compose screens (Main, History, Settings).
-- **`components/`**: Reusable UI components (Dialogs, List items, etc.).
-- **`theme/`**: Material 3 theme configuration and color palettes.
+- **`TranscriberScreen.kt`**: Setup, progress, streaming, success, error, cancel, copy, and background controls.
+- **`screens/`**: History, settings, and model manager screens.
+- **`updater/`**: Update dialog UI.
+- **`theme/`**: Material 3 theme configuration.
 
 ### `com.anomalyzed.simpletranscriber.updater`
 
-- **`AppUpdater.kt`**: Logic to check for new releases on GitHub.
-- **`DownloadReceiver.kt`**: Handles the installation of the downloaded APK.
+- **`AppUpdater.kt`**: Checks GitHub releases and parses release metadata.
+- **`DownloadReceiver.kt`**: Handles downloaded APK completion.
 
 ## Resource Files
 
-- **`assets/`**: Contains the global `models.json` used by the app if hosted locally.
-- **`res/`**: Standard Android resources (icons, strings, XML).
+- **`assets/`**: Static assets such as the app icon.
+- **`res/`**: Android resources including strings, themes, icons, and XML file providers.
