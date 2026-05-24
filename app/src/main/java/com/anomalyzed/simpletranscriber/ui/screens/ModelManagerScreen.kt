@@ -1,6 +1,5 @@
 package com.anomalyzed.simpletranscriber.ui.screens
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.anomalyzed.simpletranscriber.data.ModelBackend
 import com.anomalyzed.simpletranscriber.data.ModelInfo
 import com.anomalyzed.simpletranscriber.data.ModelStatus
 import com.anomalyzed.simpletranscriber.data.ModelWithStatus
@@ -40,6 +40,62 @@ fun ModelManagerScreen(
     onDeleteModel: (ModelInfo) -> Unit,
     onSelectModel: (String) -> Unit
 ) {
+    var selectedBackend by remember { mutableStateOf<ModelBackend?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+    var downloadedOnly by remember { mutableStateOf(false) }
+    var multilingualOnly by remember { mutableStateOf(false) }
+    var quantizedOnly by remember { mutableStateOf(false) }
+    var fitsDeviceOnly by remember { mutableStateOf(false) }
+    var smallSizeOnly by remember { mutableStateOf(false) }
+
+    val visibleModels = remember(
+        models,
+        selectedBackend,
+        searchQuery,
+        downloadedOnly,
+        multilingualOnly,
+        quantizedOnly,
+        fitsDeviceOnly,
+        smallSizeOnly,
+        deviceRamMb
+    ) {
+        val query = searchQuery.trim().lowercase()
+        models
+            .asSequence()
+            .filter { selectedBackend == null || it.info.backend == selectedBackend }
+            .filter { model ->
+                query.isBlank() ||
+                    model.info.displayName.lowercase().contains(query) ||
+                    model.info.description.lowercase().contains(query) ||
+                    model.info.id.lowercase().contains(query) ||
+                    model.info.fileName.lowercase().contains(query) ||
+                    model.info.quantization.lowercase().contains(query)
+            }
+            .filter { !downloadedOnly || it.status is ModelStatus.Downloaded || it.status is ModelStatus.Selected }
+            .filter { !multilingualOnly || !it.info.isEnglishOnly }
+            .filter { !quantizedOnly || it.info.quantization.isNotBlank() }
+            .filter { !fitsDeviceOnly || it.info.minRamMb == 0 || deviceRamMb >= it.info.minRamMb }
+            .filter { !smallSizeOnly || it.info.sizeBytes <= 500L * 1024L * 1024L }
+            .sortedWith(
+                compareByDescending<ModelWithStatus> {
+                    it.status is ModelStatus.Selected || it.status is ModelStatus.Downloaded
+                }.thenBy { it.info.backend.ordinal }
+                    .thenBy { it.info.sizeBytes }
+                    .thenBy { it.info.displayName }
+            )
+            .toList()
+    }
+    val downloadedModels = remember(visibleModels) {
+        visibleModels.filter {
+            it.status is ModelStatus.Downloaded || it.status is ModelStatus.Selected
+        }
+    }
+    val availableModels = remember(visibleModels) {
+        visibleModels.filter {
+            it.status is ModelStatus.Available || it.status is ModelStatus.Downloading
+        }
+    }
+
     // Carica il catalogo all'apertura della schermata
     LaunchedEffect(Unit) {
         onRefreshCatalog()
@@ -75,6 +131,30 @@ fun ModelManagerScreen(
                 StorageInfoCard(availableStorage)
             }
 
+            item {
+                ModelBackendFilter(
+                    selectedBackend = selectedBackend,
+                    onBackendSelected = { selectedBackend = it }
+                )
+            }
+
+            item {
+                ModelSearchAndFilters(
+                    searchQuery = searchQuery,
+                    onSearchQueryChange = { searchQuery = it },
+                    downloadedOnly = downloadedOnly,
+                    onDownloadedOnlyChange = { downloadedOnly = it },
+                    multilingualOnly = multilingualOnly,
+                    onMultilingualOnlyChange = { multilingualOnly = it },
+                    quantizedOnly = quantizedOnly,
+                    onQuantizedOnlyChange = { quantizedOnly = it },
+                    fitsDeviceOnly = fitsDeviceOnly,
+                    onFitsDeviceOnlyChange = { fitsDeviceOnly = it },
+                    smallSizeOnly = smallSizeOnly,
+                    onSmallSizeOnlyChange = { smallSizeOnly = it }
+                )
+            }
+
             // ── Error Message ──
             if (errorMessage != null) {
                 item {
@@ -106,7 +186,7 @@ fun ModelManagerScreen(
             }
 
             // ── Loading ──
-            if (isLoading && models.isEmpty()) {
+            if (isLoading && visibleModels.isEmpty()) {
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -122,9 +202,6 @@ fun ModelManagerScreen(
             }
 
             // ── Downloaded Models ──
-            val downloadedModels = models.filter {
-                it.status is ModelStatus.Downloaded || it.status is ModelStatus.Selected
-            }
             if (downloadedModels.isNotEmpty()) {
                 item {
                     Text(
@@ -134,7 +211,11 @@ fun ModelManagerScreen(
                         color = Color.Gray
                     )
                 }
-                items(downloadedModels, key = { it.info.id }) { model ->
+                items(
+                    items = downloadedModels,
+                    key = { it.info.id },
+                    contentType = { "downloadedModel" }
+                ) { model ->
                     DownloadedModelCard(
                         model = model,
                         onSelect = { onSelectModel(model.info.id) },
@@ -144,9 +225,6 @@ fun ModelManagerScreen(
             }
 
             // ── Available Models ──
-            val availableModels = models.filter {
-                it.status is ModelStatus.Available || it.status is ModelStatus.Downloading
-            }
             if (availableModels.isNotEmpty()) {
                 item {
                     Text(
@@ -156,7 +234,11 @@ fun ModelManagerScreen(
                         color = Color.Gray
                     )
                 }
-                items(availableModels, key = { it.info.id }) { model ->
+                items(
+                    items = availableModels,
+                    key = { it.info.id },
+                    contentType = { "availableModel" }
+                ) { model ->
                     AvailableModelCard(
                         model = model,
                         deviceRamMb = deviceRamMb,
@@ -167,7 +249,7 @@ fun ModelManagerScreen(
             }
 
             // ── Empty state ──
-            if (models.isEmpty() && !isLoading) {
+            if (visibleModels.isEmpty() && !isLoading) {
                 item {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(32.dp),
@@ -228,6 +310,162 @@ private fun StorageInfoCard(availableStorage: String) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ModelBackendFilter(
+    selectedBackend: ModelBackend?,
+    onBackendSelected: (ModelBackend?) -> Unit
+) {
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        SegmentedButton(
+            selected = selectedBackend == null,
+            onClick = { onBackendSelected(null) },
+            shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
+            label = { Text("All") }
+        )
+        SegmentedButton(
+            selected = selectedBackend == ModelBackend.LITERT,
+            onClick = { onBackendSelected(ModelBackend.LITERT) },
+            shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
+            label = { Text("Gemma") }
+        )
+        SegmentedButton(
+            selected = selectedBackend == ModelBackend.WHISPER_CPP,
+            onClick = { onBackendSelected(ModelBackend.WHISPER_CPP) },
+            shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
+            label = { Text("Whisper") }
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ModelSearchAndFilters(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    downloadedOnly: Boolean,
+    onDownloadedOnlyChange: (Boolean) -> Unit,
+    multilingualOnly: Boolean,
+    onMultilingualOnlyChange: (Boolean) -> Unit,
+    quantizedOnly: Boolean,
+    onQuantizedOnlyChange: (Boolean) -> Unit,
+    fitsDeviceOnly: Boolean,
+    onFitsDeviceOnlyChange: (Boolean) -> Unit,
+    smallSizeOnly: Boolean,
+    onSmallSizeOnlyChange: (Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text("Search models") },
+            leadingIcon = { Icon(Icons.Default.Search, null) },
+            trailingIcon = {
+                if (searchQuery.isNotBlank()) {
+                    IconButton(onClick = { onSearchQueryChange("") }) {
+                        Icon(Icons.Default.Close, "Clear search")
+                    }
+                }
+            },
+            shape = RoundedCornerShape(12.dp)
+        )
+
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            ModelFilterChip(
+                label = "Downloaded",
+                selected = downloadedOnly,
+                onSelectedChange = onDownloadedOnlyChange
+            )
+            ModelFilterChip(
+                label = "Multilingual",
+                selected = multilingualOnly,
+                onSelectedChange = onMultilingualOnlyChange
+            )
+            ModelFilterChip(
+                label = "Quantized",
+                selected = quantizedOnly,
+                onSelectedChange = onQuantizedOnlyChange
+            )
+            ModelFilterChip(
+                label = "Fits device",
+                selected = fitsDeviceOnly,
+                onSelectedChange = onFitsDeviceOnlyChange
+            )
+            ModelFilterChip(
+                label = "< 500 MB",
+                selected = smallSizeOnly,
+                onSelectedChange = onSmallSizeOnlyChange
+            )
+        }
+    }
+}
+
+@Composable
+private fun ModelFilterChip(
+    label: String,
+    selected: Boolean,
+    onSelectedChange: (Boolean) -> Unit
+) {
+    FilterChip(
+        selected = selected,
+        onClick = { onSelectedChange(!selected) },
+        label = { Text(label) },
+        leadingIcon = if (selected) {
+            { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
+        } else {
+            null
+        },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = Gold.copy(alpha = 0.18f),
+            selectedLabelColor = Gold,
+            selectedLeadingIconColor = Gold
+        )
+    )
+}
+
+@Composable
+private fun ModelBadges(model: ModelInfo) {
+    Row(
+        modifier = Modifier.padding(top = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        ModelBadge(
+            text = model.backend.label,
+            color = if (model.backend == ModelBackend.LITERT) Gold else Color(0xFF64B5F6)
+        )
+        if (model.quantization.isNotBlank()) {
+            ModelBadge(text = model.quantization, color = Color(0xFF81C784))
+        }
+        if (model.isEnglishOnly) {
+            ModelBadge(text = "EN", color = Color(0xFFFFB74D))
+        }
+    }
+}
+
+@Composable
+private fun ModelBadge(text: String, color: Color) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = color.copy(alpha = 0.14f),
+        contentColor = color
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1
+        )
+    }
+}
+
 @Composable
 private fun DownloadedModelCard(
     model: ModelWithStatus,
@@ -239,8 +477,7 @@ private fun DownloadedModelCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSelect() }
-            .animateContentSize(),
+            .clickable { onSelect() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkGray),
         border = if (isSelected) {
@@ -275,6 +512,7 @@ private fun DownloadedModelCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    ModelBadges(model.info)
                 }
                 Text(
                     model.info.formattedSize,
@@ -336,8 +574,7 @@ private fun AvailableModelCard(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .animateContentSize(),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = DarkGray)
     ) {
@@ -366,6 +603,7 @@ private fun AvailableModelCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
+                    ModelBadges(model.info)
                 }
                 Text(
                     model.info.formattedSize,

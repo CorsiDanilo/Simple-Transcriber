@@ -16,6 +16,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -33,6 +34,7 @@ class ModelRepository(private val context: Context) {
 
     @Volatile
     private var cancelledDownloads = mutableSetOf<String>()
+    private val lastProgressEmits = ConcurrentHashMap<String, Pair<Long, Float>>()
 
     // ── Catalogo remoto ──────────────────────────────────────────────
 
@@ -41,7 +43,9 @@ class ModelRepository(private val context: Context) {
      */
     suspend fun fetchModelCatalog(catalogUrl: String): Result<List<ModelInfo>> =
         withContext(Dispatchers.IO) {
-            val models = listOf(
+            val models = buildGemmaCatalog() + buildWhisperCatalog()
+            /*
+            val oldModels = listOf(
                 ModelInfo(
                     id = "gemma-4-e2b",
                     displayName = "Gemma 4 E2B",
@@ -63,8 +67,105 @@ class ModelRepository(private val context: Context) {
                     supportedLanguages = listOf("en", "it", "es", "fr", "de", "pt", "ru", "zh", "ja", "ar")
                 )
             )
+            */
             Result.success(models)
         }
+
+    private fun buildGemmaCatalog(): List<ModelInfo> = listOf(
+        ModelInfo(
+            id = "gemma-4-e2b",
+            backend = ModelBackend.LITERT,
+            displayName = "Gemma 4 E2B",
+            description = "LiteRT-LM - fast on-device refinement - audio-capable",
+            sizeBytes = gb(2.59),
+            downloadUrl = "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
+            fileName = "gemma-4-E2B-it.litertlm",
+            minRamMb = 4096,
+            supportedLanguages = listOf("en", "it", "es", "fr", "de", "pt", "ru", "zh", "ja", "ar")
+        ),
+        ModelInfo(
+            id = "gemma-4-e4b",
+            backend = ModelBackend.LITERT,
+            displayName = "Gemma 4 E4B",
+            description = "LiteRT-LM - higher quality - high RAM",
+            sizeBytes = gb(3.66),
+            downloadUrl = "https://huggingface.co/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm",
+            fileName = "gemma-4-E4B-it.litertlm",
+            minRamMb = 6144,
+            supportedLanguages = listOf("en", "it", "es", "fr", "de", "pt", "ru", "zh", "ja", "ar")
+        )
+    )
+
+    private fun buildWhisperCatalog(): List<ModelInfo> {
+        fun whisper(
+            id: String,
+            displayName: String,
+            sizeBytes: Long,
+            minRamMb: Int,
+            quantization: String = "",
+            englishOnly: Boolean = false,
+            diarization: Boolean = false
+        ): ModelInfo {
+            val fileName = "ggml-$id.bin"
+            val languageLabel = if (englishOnly) "English only" else "Multilingual"
+            val quantLabel = if (quantization.isNotBlank()) "$quantization quantized" else "Full precision"
+            val diarizationLabel = if (diarization) " - speaker turns" else ""
+            return ModelInfo(
+                id = "whisper-$id",
+                backend = ModelBackend.WHISPER_CPP,
+                displayName = displayName,
+                description = "Whisper.cpp - $languageLabel - $quantLabel$diarizationLabel",
+                sizeBytes = sizeBytes,
+                downloadUrl = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/$fileName",
+                fileName = fileName,
+                minRamMb = minRamMb,
+                supportedLanguages = if (englishOnly) listOf("en") else listOf("multi"),
+                quantization = quantization,
+                isEnglishOnly = englishOnly
+            )
+        }
+
+        return listOf(
+            whisper("tiny", "Whisper Tiny", mib(75), 512),
+            whisper("tiny-q5_1", "Whisper Tiny Q5_1", mib(31), 512, "Q5_1"),
+            whisper("tiny-q8_0", "Whisper Tiny Q8_0", mib(42), 512, "Q8_0"),
+            whisper("tiny.en", "Whisper Tiny EN", mib(75), 512, englishOnly = true),
+            whisper("tiny.en-q5_1", "Whisper Tiny EN Q5_1", mib(31), 512, "Q5_1", englishOnly = true),
+            whisper("tiny.en-q8_0", "Whisper Tiny EN Q8_0", mib(42), 512, "Q8_0", englishOnly = true),
+            whisper("base", "Whisper Base", mib(142), 1024),
+            whisper("base-q5_1", "Whisper Base Q5_1", mib(57), 1024, "Q5_1"),
+            whisper("base-q8_0", "Whisper Base Q8_0", mib(78), 1024, "Q8_0"),
+            whisper("base.en", "Whisper Base EN", mib(142), 1024, englishOnly = true),
+            whisper("base.en-q5_1", "Whisper Base EN Q5_1", mib(57), 1024, "Q5_1", englishOnly = true),
+            whisper("base.en-q8_0", "Whisper Base EN Q8_0", mib(78), 1024, "Q8_0", englishOnly = true),
+            whisper("small", "Whisper Small", mib(466), 2048),
+            whisper("small-q5_1", "Whisper Small Q5_1", mib(181), 2048, "Q5_1"),
+            whisper("small-q8_0", "Whisper Small Q8_0", mib(252), 2048, "Q8_0"),
+            whisper("small.en", "Whisper Small EN", mib(466), 2048, englishOnly = true),
+            whisper("small.en-q5_1", "Whisper Small EN Q5_1", mib(181), 2048, "Q5_1", englishOnly = true),
+            whisper("small.en-q8_0", "Whisper Small EN Q8_0", mib(252), 2048, "Q8_0", englishOnly = true),
+            whisper("small.en-tdrz", "Whisper Small EN TDRZ", mib(465), 2048, englishOnly = true, diarization = true),
+            whisper("medium", "Whisper Medium", gb(1.5), 3072),
+            whisper("medium-q5_0", "Whisper Medium Q5_0", mib(514), 3072, "Q5_0"),
+            whisper("medium-q8_0", "Whisper Medium Q8_0", mib(785), 3072, "Q8_0"),
+            whisper("medium.en", "Whisper Medium EN", gb(1.5), 3072, englishOnly = true),
+            whisper("medium.en-q5_0", "Whisper Medium EN Q5_0", mib(514), 3072, "Q5_0", englishOnly = true),
+            whisper("medium.en-q8_0", "Whisper Medium EN Q8_0", mib(785), 3072, "Q8_0", englishOnly = true),
+            whisper("large-v1", "Whisper Large v1", gb(2.9), 4096),
+            whisper("large-v2", "Whisper Large v2", gb(2.9), 4096),
+            whisper("large-v2-q5_0", "Whisper Large v2 Q5_0", gb(1.1), 4096, "Q5_0"),
+            whisper("large-v2-q8_0", "Whisper Large v2 Q8_0", gb(1.5), 4096, "Q8_0"),
+            whisper("large-v3", "Whisper Large v3", gb(2.9), 4096),
+            whisper("large-v3-q5_0", "Whisper Large v3 Q5_0", gb(1.1), 4096, "Q5_0"),
+            whisper("large-v3-turbo", "Whisper Large v3 Turbo", gb(1.5), 4096),
+            whisper("large-v3-turbo-q5_0", "Whisper Large v3 Turbo Q5_0", mib(547), 4096, "Q5_0"),
+            whisper("large-v3-turbo-q8_0", "Whisper Large v3 Turbo Q8_0", mib(834), 4096, "Q8_0")
+        )
+    }
+
+    private fun mib(value: Int): Long = value.toLong() * 1024L * 1024L
+
+    private fun gb(value: Double): Long = (value * 1024.0 * 1024.0 * 1024.0).toLong()
 
     // ── Stato modelli ────────────────────────────────────────────────
 
@@ -248,12 +349,24 @@ class ModelRepository(private val context: Context) {
     // ── Helpers privati ──────────────────────────────────────────────
 
     private fun updateProgress(modelId: String, bytesDownloaded: Long, totalBytes: Long) {
+        val fraction = if (totalBytes > 0) bytesDownloaded.toFloat() / totalBytes else 0f
+        val now = android.os.SystemClock.elapsedRealtime()
+        val last = lastProgressEmits[modelId]
+        val shouldEmit = last == null ||
+            fraction >= 1f ||
+            fraction - last.second >= 0.01f ||
+            now - last.first >= 500L
+
+        if (!shouldEmit) return
+
+        lastProgressEmits[modelId] = now to fraction
         val current = _activeDownloads.value.toMutableMap()
         current[modelId] = DownloadProgress(modelId, bytesDownloaded, totalBytes)
         _activeDownloads.value = current
     }
 
     private fun removeProgress(modelId: String) {
+        lastProgressEmits.remove(modelId)
         val current = _activeDownloads.value.toMutableMap()
         current.remove(modelId)
         _activeDownloads.value = current

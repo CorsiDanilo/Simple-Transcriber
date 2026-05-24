@@ -26,6 +26,24 @@ The build system automatically reads this value and injects it into the app.
 
 The project is configured to build a debug version without additional setup. For release builds, the signing is handled by GitHub Actions. If you wish to build a signed release locally, you must modify `app/build.gradle.kts` to point to your `.jks` file.
 
+## Native Dependencies (whisper.cpp)
+
+This project relies on the native `whisper.cpp` library for speech-to-text processing. It is integrated as a **Git Submodule** located in `third_party/whisper.cpp`.
+
+### Fetching or Updating the Submodule
+
+If you are setting up the project for the first time or if the submodule folder is empty:
+
+1. **Initialize and update** the submodule:
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+2. **Update** the submodule to the latest upstream version defined in the repository:
+   ```bash
+   git submodule update --remote --recursive
+   ```
+
 ## Building the Project
 
 1. **Import**: Open Android Studio and select "Open" -> choose the project root.

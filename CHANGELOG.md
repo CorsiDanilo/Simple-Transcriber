@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0] - 2026-05-24
+### Added
+- Integrated **Whisper.cpp** as a high-quality, fully offline on-device speech-to-text transcription engine.
+- Configured models.json with multilingual Whisper models (Tiny, Base, Small, Medium, and Large v3 Turbo) with quantization options (Q5_1, Q8_0, Q5_0).
+- Set up `whisper.cpp` codebase as a Git Submodule at `third_party/whisper.cpp` pinned to stable release tag `v1.8.4` to maintain a clean project repository size.
+- Updated project documentation with detailed setup, build, and submodule cloning instructions.
+
+### Changed
+- Configured `.gitignore` to cleanly exclude Android Studio C++/CMake compilation caches (`.cxx/`, `app/.cxx/`) from version control.
+- Restructured `debug` buildType configuration in Gradle to avoid unneeded signing components.
+
 ## [1.0.3] - 2026-05-16
 ### Added
 - Multiple concurrent transcriptions now create independent notifications, each tracking its own progress and final state.

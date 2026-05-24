@@ -14,6 +14,7 @@ import android.os.IBinder
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.anomalyzed.simpletranscriber.data.AppDatabase
+import com.anomalyzed.simpletranscriber.data.ModelBackend
 import com.anomalyzed.simpletranscriber.data.ModelRepository
 import com.anomalyzed.simpletranscriber.data.PreferenceManager
 import com.anomalyzed.simpletranscriber.data.TranscriptionItem
@@ -23,6 +24,7 @@ import com.anomalyzed.simpletranscriber.engine.EngineType
 import com.anomalyzed.simpletranscriber.engine.LiteRTEngine
 import com.anomalyzed.simpletranscriber.engine.TranscriptionEngine
 import com.anomalyzed.simpletranscriber.engine.TranscriptionResult
+import com.anomalyzed.simpletranscriber.engine.WhisperCppEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.CoroutineScope
@@ -313,10 +315,14 @@ class TranscriptionService : Service() {
                 val settings = prefManager.settingsFlow.first()
                 val catalogResult = modelRepository.fetchModelCatalog(settings.modelCatalogUrl)
                 val catalog = catalogResult.getOrDefault(emptyList())
+                val selectedModel = catalog.find { it.id == selectedModelId }
                 val modelPath = modelRepository.getModelPathById(selectedModelId, catalog)
-                val modelName = catalog.find { it.id == selectedModelId }?.displayName ?: "Local Model"
+                val modelName = selectedModel?.displayName ?: "Local Model"
                 
-                LiteRTEngine(this, modelPath, modelName)
+                when (selectedModel?.backend) {
+                    ModelBackend.WHISPER_CPP -> WhisperCppEngine(modelPath, modelName)
+                    else -> LiteRTEngine(this, modelPath, modelName)
+                }
             }
         }
     }

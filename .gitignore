@@ -2,6 +2,8 @@
 .gradle/
 build/
 local.properties
+.cxx/
+app/.cxx/
 
 # File dell'SDK Android
 *.iml

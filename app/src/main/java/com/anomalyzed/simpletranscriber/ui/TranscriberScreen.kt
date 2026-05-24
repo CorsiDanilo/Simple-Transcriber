@@ -200,7 +200,7 @@ private fun EngineChip(
                 enabled = isAICoreAvailable
             )
             DropdownMenuItem(
-                text = { Text("Local Model (LiteRT-LM)") },
+                text = { Text("Local Model") },
                 onClick = { onEngineChange(EngineType.LITERT.key); expanded = false },
                 leadingIcon = { Icon(Icons.Default.PhoneAndroid, null, modifier = Modifier.size(20.dp), tint = Gold) }
             )

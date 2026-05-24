@@ -43,6 +43,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // ── Catalogo modelli ─────────────────────────────────────────────
 
     private val _modelCatalog = MutableStateFlow<List<ModelInfo>>(emptyList())
+    private val _modelStateVersion = MutableStateFlow(0)
 
     private val _catalogLoading = MutableStateFlow(false)
     val catalogLoading: StateFlow<Boolean> = _catalogLoading.asStateFlow()
@@ -58,8 +59,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val modelsWithStatus: StateFlow<List<ModelWithStatus>> = combine(
         _modelCatalog,
         settings.map { it.selectedModelId }.distinctUntilChanged(),
-        modelRepository.activeDownloads
-    ) { catalog, selectedId, _ ->
+        modelRepository.activeDownloads,
+        _modelStateVersion
+    ) { catalog, selectedId, _, _ ->
         modelRepository.getModelsWithStatus(catalog, selectedId)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -107,8 +109,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _catalogError.value = "Download failed: ${error.localizedMessage}"
                 }
             }
-            // Dopo il download, aggiorna la lista
-            _modelCatalog.value = _modelCatalog.value // trigger recomposition
+            _modelStateVersion.value += 1
         }
     }
 
@@ -123,8 +124,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 prefManager.updateSelectedModel("")
             }
             modelRepository.deleteModel(model)
-            // Trigger recomposition
-            _modelCatalog.value = _modelCatalog.value.toList()
+            _modelStateVersion.value += 1
         }
     }
 

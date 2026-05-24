@@ -97,14 +97,14 @@ fun SettingsScreen(
 
                 HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
 
-                // LiteRT
+                // Local models
                 EngineOption(
                     icon = Icons.Default.PhoneAndroid,
-                    title = "Local Model (LiteRT-LM)",
+                    title = "Local Model",
                     subtitle = if (selectedModelName.isNotBlank()) {
                         "Selected: $selectedModelName"
                     } else {
-                        "Full control, works offline"
+                        "Gemma and Whisper downloads"
                     },
                     isSelected = currentEngine == EngineType.LITERT,
                     isEnabled = true,

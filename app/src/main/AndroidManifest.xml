@@ -23,6 +23,7 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/Theme.Transcriber"
+        android:enableOnBackInvokedCallback="true"
         android:largeHeap="true">
 
         <!--

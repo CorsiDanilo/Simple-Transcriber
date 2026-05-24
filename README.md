@@ -58,10 +58,16 @@ graph TD
 
 ### Installation
 
-1. Clone the repository:
+1. Clone the repository along with its submodules:
 
    ```bash
-   git clone https://github.com/CorsiDanilo/simple-transcription-app
+   git clone --recursive https://github.com/CorsiDanilo/simple-transcription-app
+   ```
+
+   *Note: If you have already cloned the repository without the `--recursive` flag, you can initialize and download the submodules by running:*
+
+   ```bash
+   git submodule update --init --recursive
    ```
 
 2. Open the project in Android Studio.

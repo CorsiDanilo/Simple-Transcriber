@@ -42,6 +42,6 @@ For a release:
 
 ## Current Release
 
-- Version: `1.0.3`
-- Version code: `4`
-- Tag: `v1.0.3`
+- Version: `1.1.0`
+- Version code: `5`
+- Tag: `v1.1.0`
