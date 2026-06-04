@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.1.1] - 2026-06-04
+### Fixed
+- Hardened the APK update flow with release asset integrity checks and signer verification.
+- Excluded the Gemini API key datastore from backup and device transfer.
+- Marked the download receiver non-exported and tightened update handling.
+
 ## [1.1.0] - 2026-05-24
 ### Added
 - Integrated **Whisper.cpp** as a high-quality, fully offline on-device speech-to-text transcription engine.

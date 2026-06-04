@@ -43,6 +43,7 @@ import com.anomalyzed.simpletranscriber.ui.theme.TranscriberTheme
 import com.anomalyzed.simpletranscriber.updater.AppUpdater
 import com.anomalyzed.simpletranscriber.updater.UpdateInfo
 import com.anomalyzed.simpletranscriber.updater.DownloadReceiver
+import com.anomalyzed.simpletranscriber.updater.UpdateIntegrity
 import com.anomalyzed.simpletranscriber.ui.updater.UpdateDialog
 import com.anomalyzed.simpletranscriber.engine.EngineType
 import android.app.DownloadManager
@@ -287,8 +288,16 @@ class MainActivity : ComponentActivity() {
                         updateInfo = info,
                         onDismiss = { updateInfo = null },
                         onConfirm = {
-                            info.downloadUrl?.let { url ->
-                                downloadUpdate(url, info.versionName)
+                            val downloadUrl = info.downloadUrl
+                            val expectedSha256 = info.expectedSha256
+                            if (downloadUrl != null && expectedSha256 != null) {
+                                downloadUpdate(downloadUrl, info.versionName, expectedSha256)
+                            } else {
+                                Toast.makeText(
+                                    context,
+                                    "Update blocked: missing integrity metadata",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
                             updateInfo = null
                         }
@@ -381,8 +390,14 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun downloadUpdate(url: String, versionName: String) {
+    private fun downloadUpdate(url: String, versionName: String, expectedSha256: String) {
         try {
+            val normalizedSha256 = UpdateIntegrity.normalizeSha256(expectedSha256)
+            if (normalizedSha256 == null) {
+                Toast.makeText(this, "Update blocked: invalid SHA-256 metadata", Toast.LENGTH_LONG).show()
+                return
+            }
+
             val dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
             if (dir != null && !dir.exists()) {
                 dir.mkdirs()
@@ -395,9 +410,10 @@ class MainActivity : ComponentActivity() {
                 .setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "transcriber-$versionName.apk")
                 .setAllowedOverMetered(true)
                 .setAllowedOverRoaming(true)
-                
+
             val downloadManager = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            DownloadReceiver.enqueuedDownloadId = downloadManager.enqueue(request)
+            val downloadId = downloadManager.enqueue(request)
+            DownloadReceiver.setPendingDownload(downloadId, normalizedSha256, versionName)
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Download error: ${e.message}", Toast.LENGTH_LONG).show()

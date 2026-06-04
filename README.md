@@ -89,7 +89,7 @@ graph TD
 
 ## Release Process
 
-Releases are versioned in `app/build.gradle.kts` and documented in `CHANGELOG.md`. Pushing a tag such as `v1.0.3` triggers the GitHub Actions release pipeline.
+Releases are versioned in `app/build.gradle.kts` and documented in `CHANGELOG.md`. Pushing a tag such as `v1.1.1` triggers the GitHub Actions release pipeline.
 
 ## License
 
