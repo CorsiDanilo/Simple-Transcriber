@@ -45,7 +45,10 @@ fun TranscriberScreen(
     currentEngine: String = "cloud",
     selectedModelName: String = "",
     isModelDownloaded: Boolean = false,
-    isAICoreAvailable: Boolean = false
+    isAICoreAvailable: Boolean = false,
+    downloadedModels: List<com.anomalyzed.simpletranscriber.data.ModelInfo> = emptyList(),
+    currentLocalModelId: String = "",
+    onUpdateLocalModel: (String) -> Unit = {}
 ) {
     val engineType = EngineType.fromKey(currentEngine)
 
@@ -74,7 +77,7 @@ fun TranscriberScreen(
                 // Header
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(Icons.Default.Translate, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text("Transcriber", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
+                    Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold)
                 }
 
                 // Engine chip
@@ -96,9 +99,12 @@ fun TranscriberScreen(
                         engineType = engineType,
                         selectedModelName = selectedModelName,
                         isModelDownloaded = isModelDownloaded,
+                        downloadedModels = downloadedModels,
+                        currentLocalModelId = currentLocalModelId,
                         onApiKeyChange = onUpdateApiKey,
                         onLanguageChange = onUpdateLanguage,
                         onCloudModelChange = onUpdateCloudModel,
+                        onLocalModelChange = onUpdateLocalModel,
                         onStart = onStartTranscription
                     )
                     is TranscriberUiState.Loading -> LoadingContent(state.progressMessage)
@@ -121,7 +127,7 @@ fun TranscriberScreen(
                     ) {
                         Icon(Icons.Default.Cancel, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Cancel Transcription")
+                        Text(stringResource(R.string.settings_cancel_transcription))
                     }
 
                     Button(
@@ -135,7 +141,7 @@ fun TranscriberScreen(
                     ) {
                         Icon(Icons.Default.Layers, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Run in Background")
+                        Text(stringResource(R.string.settings_bg_run))
                     }
                 }
 
@@ -157,11 +163,11 @@ private fun EngineChip(
     var expanded by remember { mutableStateOf(false) }
 
     val (icon, label, color) = when (engineType) {
-        EngineType.CLOUD -> Triple(Icons.Default.Cloud, "Cloud", Color(0xFF64B5F6))
-        EngineType.AICORE -> Triple(Icons.Default.Memory, "AICore", Color(0xFF81C784))
+        EngineType.CLOUD -> Triple(Icons.Default.Cloud, stringResource(R.string.engine_cloud), Color(0xFF64B5F6))
+        EngineType.AICORE -> Triple(Icons.Default.Memory, stringResource(R.string.engine_aicore), Color(0xFF81C784))
         EngineType.LITERT -> Triple(
             Icons.Default.PhoneAndroid,
-            selectedModelName.ifBlank { "Local" },
+            selectedModelName.ifBlank { stringResource(R.string.engine_local_fallback) },
             Gold
         )
     }
@@ -189,18 +195,18 @@ private fun EngineChip(
             onDismissRequest = { expanded = false }
         ) {
             DropdownMenuItem(
-                text = { Text("Cloud (Gemini API)") },
+                text = { Text(stringResource(R.string.engine_cloud_label)) },
                 onClick = { onEngineChange(EngineType.CLOUD.key); expanded = false },
                 leadingIcon = { Icon(Icons.Default.Cloud, null, modifier = Modifier.size(20.dp), tint = Color(0xFF64B5F6)) }
             )
             DropdownMenuItem(
-                text = { Text("AICore (On-Device)") },
+                text = { Text(stringResource(R.string.engine_aicore_label)) },
                 onClick = { onEngineChange(EngineType.AICORE.key); expanded = false },
                 leadingIcon = { Icon(Icons.Default.Memory, null, modifier = Modifier.size(20.dp), tint = Color(0xFF81C784)) },
                 enabled = isAICoreAvailable
             )
             DropdownMenuItem(
-                text = { Text("Local Model") },
+                text = { Text(stringResource(R.string.engine_local_label)) },
                 onClick = { onEngineChange(EngineType.LITERT.key); expanded = false },
                 leadingIcon = { Icon(Icons.Default.PhoneAndroid, null, modifier = Modifier.size(20.dp), tint = Gold) }
             )
@@ -217,9 +223,12 @@ fun SetupContent(
     engineType: EngineType,
     selectedModelName: String,
     isModelDownloaded: Boolean,
+    downloadedModels: List<com.anomalyzed.simpletranscriber.data.ModelInfo>,
+    currentLocalModelId: String,
     onApiKeyChange: (String) -> Unit,
     onLanguageChange: (String) -> Unit,
     onCloudModelChange: (String) -> Unit,
+    onLocalModelChange: (String) -> Unit,
     onStart: () -> Unit
 ) {
     var langExpanded by remember { mutableStateOf(false) }
@@ -232,7 +241,7 @@ fun SetupContent(
     val isStartEnabled = when (engineType) {
         EngineType.CLOUD -> apiKey.isNotBlank()
         EngineType.AICORE -> true
-        EngineType.LITERT -> selectedModelName.isNotBlank() && isModelDownloaded
+        EngineType.LITERT -> currentLocalModelId.isNotBlank() && downloadedModels.any { it.id == currentLocalModelId }
     }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -275,7 +284,7 @@ fun SetupContent(
                         value = currentModelLabel,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Cloud Model") },
+                        label = { Text(stringResource(R.string.settings_cloud_model)) },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = modelExpanded) },
                         modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
@@ -299,34 +308,9 @@ fun SetupContent(
             }
         }
 
-        // Model info — solo per LiteRT
+        // Local Model dropdown — solo per LiteRT
         if (engineType == EngineType.LITERT) {
-            if (selectedModelName.isNotBlank() && isModelDownloaded) {
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Gold.copy(alpha = 0.1f)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.CheckCircle,
-                            null,
-                            tint = Gold,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            "Model Ready: $selectedModelName",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            } else {
+            if (downloadedModels.isEmpty()) {
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
@@ -345,11 +329,49 @@ fun SetupContent(
                             modifier = Modifier.size(20.dp)
                         )
                         Text(
-                            if (selectedModelName.isBlank()) "No model selected. Go to Settings → Manage Models." 
-                            else "Model not downloaded. Go to Settings → Manage Models.",
+                            stringResource(R.string.model_missing_warning),
                             fontSize = 13.sp,
                             color = MaterialTheme.colorScheme.onErrorContainer
                         )
+                    }
+                }
+            } else {
+                var localModelExpanded by remember { mutableStateOf(false) }
+                val currentLocalModelLabel = downloadedModels.find { it.id == currentLocalModelId }?.let {
+                    val backendLabel = if (it.backend == com.anomalyzed.simpletranscriber.data.ModelBackend.LITERT) "Gemma" else "Whisper"
+                    "${it.displayName} ($backendLabel - ${it.formattedSize})"
+                } ?: stringResource(R.string.select_local_model)
+
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    ExposedDropdownMenuBox(
+                        expanded = localModelExpanded,
+                        onExpandedChange = { localModelExpanded = !localModelExpanded }
+                    ) {
+                        OutlinedTextField(
+                            value = currentLocalModelLabel,
+                            onValueChange = {},
+                            readOnly = true,
+                            label = { Text(stringResource(R.string.settings_engine_local)) },
+                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = localModelExpanded) },
+                            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+
+                        ExposedDropdownMenu(
+                            expanded = localModelExpanded,
+                            onDismissRequest = { localModelExpanded = false }
+                        ) {
+                            downloadedModels.forEach { model ->
+                                val backendLabel = if (model.backend == com.anomalyzed.simpletranscriber.data.ModelBackend.LITERT) "Gemma" else "Whisper"
+                                DropdownMenuItem(
+                                    text = { Text("${model.displayName} ($backendLabel - ${model.formattedSize})") },
+                                    onClick = {
+                                        onLocalModelChange(model.id)
+                                        localModelExpanded = false
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -375,7 +397,7 @@ fun SetupContent(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        "Using on-device AICore engine",
+                        stringResource(R.string.aicore_active_info),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -393,7 +415,7 @@ fun SetupContent(
                     value = selectedLanguage,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Transcriber Language") },
+                    label = { Text(stringResource(R.string.label_language)) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = langExpanded) },
                     modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryEditable).fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
@@ -469,7 +491,7 @@ fun StreamingContent(text: String, isRefining: Boolean, onCopy: (String) -> Unit
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                 Text(
-                    "Refining text...",
+                    stringResource(R.string.status_refining),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
@@ -511,7 +533,7 @@ fun ErrorContent(msg: String, onRetry: () -> Unit) {
                     modifier = Modifier.size(40.dp)
                 )
                 Text(
-                    "Transcriber Error",
+                    stringResource(R.string.title_transcribing_error),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold
@@ -536,7 +558,7 @@ fun ErrorContent(msg: String, onRetry: () -> Unit) {
         ) {
             Icon(Icons.Default.SettingsBackupRestore, null, modifier = Modifier.size(18.dp))
             Spacer(Modifier.width(8.dp))
-            Text("Back to Setup / Change Engine")
+            Text(stringResource(R.string.btn_back_to_setup))
         }
     }
 }

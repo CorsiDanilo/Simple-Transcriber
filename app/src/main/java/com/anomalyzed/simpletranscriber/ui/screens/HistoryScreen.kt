@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import com.anomalyzed.simpletranscriber.data.TranscriptionItem
 import com.anomalyzed.simpletranscriber.ui.theme.DarkGray
 import com.anomalyzed.simpletranscriber.ui.theme.Gold
+import androidx.compose.ui.res.stringResource
+import com.anomalyzed.simpletranscriber.R
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -63,8 +65,8 @@ fun HistoryScreen(
     itemToDelete?.let { item ->
         AlertDialog(
             onDismissRequest = { itemToDelete = null },
-            title = { Text("Delete Transcription") },
-            text = { Text("Do you want to delete this transcription? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_transcription_title)) },
+            text = { Text(stringResource(R.string.delete_transcription_message)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -72,12 +74,12 @@ fun HistoryScreen(
                         itemToDelete = null
                     }
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.btn_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { itemToDelete = null }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.btn_cancel))
                 }
             }
         )
@@ -87,8 +89,8 @@ fun HistoryScreen(
     if (showBulkDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showBulkDeleteConfirm = false },
-            title = { Text("Delete Transcriptions") },
-            text = { Text("Do you want to delete ${selectedIds.size} selected transcriptions? This action cannot be undone.") },
+            title = { Text(stringResource(R.string.delete_transcriptions_title)) },
+            text = { Text(stringResource(R.string.delete_transcriptions_message, selectedIds.size)) },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -97,12 +99,12 @@ fun HistoryScreen(
                         showBulkDeleteConfirm = false
                     }
                 ) {
-                    Text("Delete", color = MaterialTheme.colorScheme.error)
+                    Text(stringResource(R.string.btn_delete), color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showBulkDeleteConfirm = false }) {
-                    Text("Cancel")
+                    Text(stringResource(R.string.btn_cancel))
                 }
             }
         )
@@ -113,7 +115,7 @@ fun HistoryScreen(
             if (isSelectionMode) {
                 // Selection mode top bar
                 TopAppBar(
-                    title = { Text("${selectedIds.size} selected", fontWeight = FontWeight.Bold) },
+                    title = { Text(stringResource(R.string.selected_count, selectedIds.size), fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { selectedIds = emptySet() }) {
                             Icon(Icons.Default.Close, contentDescription = "Clear selection")
@@ -149,7 +151,7 @@ fun HistoryScreen(
             } else {
                 // Normal top bar
                 TopAppBar(
-                    title = { Text("History", fontWeight = FontWeight.Bold) },
+                    title = { Text(stringResource(R.string.history_title), fontWeight = FontWeight.Bold) },
                     actions = {
                         IconButton(onClick = { isSearchActive = !isSearchActive }) {
                             Icon(Icons.Default.Search, null)
@@ -174,7 +176,7 @@ fun HistoryScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp),
-                    placeholder = { Text("Search transcriptions...") },
+                    placeholder = { Text(stringResource(R.string.search_placeholder)) },
                     leadingIcon = { Icon(Icons.Default.Search, null) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp)
@@ -226,7 +228,7 @@ fun HistoryItemCard(
     onLongClick: () -> Unit
 ) {
     val dateStr = remember(item.timestamp) {
-        val sdf = SimpleDateFormat("dd MMM • hh:mm a", Locale.ENGLISH)
+        val sdf = SimpleDateFormat("dd MMM • hh:mm a", Locale.getDefault())
         sdf.format(Date(item.timestamp))
     }
 

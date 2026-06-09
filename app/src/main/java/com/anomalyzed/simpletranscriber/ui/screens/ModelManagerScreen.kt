@@ -24,6 +24,8 @@ import com.anomalyzed.simpletranscriber.data.ModelStatus
 import com.anomalyzed.simpletranscriber.data.ModelWithStatus
 import com.anomalyzed.simpletranscriber.ui.theme.DarkGray
 import com.anomalyzed.simpletranscriber.ui.theme.Gold
+import androidx.compose.ui.res.stringResource
+import com.anomalyzed.simpletranscriber.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -104,15 +106,15 @@ fun ModelManagerScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Model Manager", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.model_manager_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
+                        Icon(Icons.Default.ArrowBack, stringResource(R.string.content_desc_back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onRefreshCatalog, enabled = !isLoading) {
-                        Icon(Icons.Default.Refresh, "Refresh catalog")
+                        Icon(Icons.Default.Refresh, stringResource(R.string.content_desc_refresh_catalog))
                     }
                 }
             )
@@ -195,7 +197,7 @@ fun ModelManagerScreen(
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             CircularProgressIndicator(modifier = Modifier.size(36.dp))
                             Spacer(Modifier.height(12.dp))
-                            Text("Loading catalog...", color = Color.Gray, fontSize = 14.sp)
+                            Text(stringResource(R.string.loading_catalog), color = Color.Gray, fontSize = 14.sp)
                         }
                     }
                 }
@@ -205,7 +207,7 @@ fun ModelManagerScreen(
             if (downloadedModels.isNotEmpty()) {
                 item {
                     Text(
-                        "Downloaded",
+                        stringResource(R.string.status_downloaded),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Gray
@@ -228,7 +230,7 @@ fun ModelManagerScreen(
             if (availableModels.isNotEmpty()) {
                 item {
                     Text(
-                        "Available",
+                        stringResource(R.string.status_available),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Gray
@@ -264,13 +266,13 @@ fun ModelManagerScreen(
                             )
                             Spacer(Modifier.height(12.dp))
                             Text(
-                                "No models available",
+                                stringResource(R.string.no_models_available),
                                 color = Color.Gray,
                                 fontSize = 14.sp
                             )
                             Spacer(Modifier.height(8.dp))
                             TextButton(onClick = onRefreshCatalog) {
-                                Text("Refresh")
+                                Text(stringResource(R.string.btn_refresh))
                             }
                         }
                     }
@@ -299,7 +301,7 @@ private fun StorageInfoCard(availableStorage: String) {
                 modifier = Modifier.size(28.dp)
             )
             Column {
-                Text("Available Storage", fontSize = 12.sp, color = Color.Gray)
+                Text(stringResource(R.string.storage_available), fontSize = 12.sp, color = Color.Gray)
                 Text(
                     availableStorage,
                     fontSize = 18.sp,
@@ -321,19 +323,19 @@ private fun ModelBackendFilter(
             selected = selectedBackend == null,
             onClick = { onBackendSelected(null) },
             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 3),
-            label = { Text("All") }
+            label = { Text(stringResource(R.string.backend_all)) }
         )
         SegmentedButton(
             selected = selectedBackend == ModelBackend.LITERT,
             onClick = { onBackendSelected(ModelBackend.LITERT) },
             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 3),
-            label = { Text("Gemma") }
+            label = { Text(stringResource(R.string.backend_gemma)) }
         )
         SegmentedButton(
             selected = selectedBackend == ModelBackend.WHISPER_CPP,
             onClick = { onBackendSelected(ModelBackend.WHISPER_CPP) },
             shape = SegmentedButtonDefaults.itemShape(index = 2, count = 3),
-            label = { Text("Whisper") }
+            label = { Text(stringResource(R.string.backend_whisper)) }
         )
     }
 }
@@ -360,12 +362,12 @@ private fun ModelSearchAndFilters(
             onValueChange = onSearchQueryChange,
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            label = { Text("Search models") },
+            label = { Text(stringResource(R.string.search_models_placeholder)) },
             leadingIcon = { Icon(Icons.Default.Search, null) },
             trailingIcon = {
                 if (searchQuery.isNotBlank()) {
                     IconButton(onClick = { onSearchQueryChange("") }) {
-                        Icon(Icons.Default.Close, "Clear search")
+                        Icon(Icons.Default.Close, stringResource(R.string.content_desc_clear_search))
                     }
                 }
             },
@@ -378,22 +380,22 @@ private fun ModelSearchAndFilters(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             ModelFilterChip(
-                label = "Downloaded",
+                label = stringResource(R.string.chip_downloaded),
                 selected = downloadedOnly,
                 onSelectedChange = onDownloadedOnlyChange
             )
             ModelFilterChip(
-                label = "Multilingual",
+                label = stringResource(R.string.chip_multilingual),
                 selected = multilingualOnly,
                 onSelectedChange = onMultilingualOnlyChange
             )
             ModelFilterChip(
-                label = "Quantized",
+                label = stringResource(R.string.chip_quantized),
                 selected = quantizedOnly,
                 onSelectedChange = onQuantizedOnlyChange
             )
             ModelFilterChip(
-                label = "Fits device",
+                label = stringResource(R.string.chip_fits_device),
                 selected = fitsDeviceOnly,
                 onSelectedChange = onFitsDeviceOnlyChange
             )
@@ -537,11 +539,11 @@ private fun DownloadedModelCard(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(4.dp))
-                        Text("Selected", fontSize = 12.sp, color = Gold, fontWeight = FontWeight.Medium)
+                        Text(stringResource(R.string.status_selected), fontSize = 12.sp, color = Gold, fontWeight = FontWeight.Medium)
                     }
                 } else {
                     TextButton(onClick = onSelect, contentPadding = PaddingValues(0.dp)) {
-                        Text("Tap to select", fontSize = 12.sp)
+                        Text(stringResource(R.string.status_tap_to_select), fontSize = 12.sp)
                     }
                 }
 
@@ -551,7 +553,7 @@ private fun DownloadedModelCard(
                 ) {
                     Icon(
                         Icons.Default.Delete,
-                        "Delete model",
+                        stringResource(R.string.content_desc_delete_model),
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(20.dp)
                     )
@@ -626,7 +628,7 @@ private fun AvailableModelCard(
                         modifier = Modifier.size(14.dp)
                     )
                     Text(
-                        "Requires ${model.info.minRamMb / 1024} GB RAM (your device: ${deviceRamMb / 1024} GB)",
+                        stringResource(R.string.ram_requirement_warning, model.info.minRamMb / 1024, deviceRamMb / 1024),
                         fontSize = 11.sp,
                         color = Color(0xFFFF9800)
                     )
@@ -665,7 +667,7 @@ private fun AvailableModelCard(
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(Modifier.width(4.dp))
-                            Text("Cancel", fontSize = 12.sp)
+                            Text(stringResource(R.string.btn_cancel), fontSize = 12.sp)
                         }
                     }
                 }
@@ -682,7 +684,7 @@ private fun AvailableModelCard(
                 ) {
                     Icon(Icons.Default.Download, null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Download")
+                    Text(stringResource(R.string.btn_download))
                 }
             }
         }

@@ -12,4 +12,111 @@
     <string name="msg_api_key_required">Please enter your Gemini API Key. You can get one at aistudio.google.com</string>
     <string name="toast_copied">Copied to clipboard!</string>
     <string name="msg_success_copy">Transcription copied!</string>
+
+    <!-- Settings strings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_engine_section">Transcriber Engine</string>
+    <string name="settings_engine_cloud">Cloud (Gemini API)</string>
+    <string name="settings_engine_cloud_sub">Requires API Key &amp; Internet</string>
+    <string name="settings_engine_aicore">AICore (On-Device)</string>
+    <string name="settings_engine_aicore_sub_ready">System-managed, no setup needed</string>
+    <string name="settings_engine_aicore_sub_missing">⚠️ Not available on this device</string>
+    <string name="settings_engine_local">Local Model</string>
+    <string name="settings_engine_local_sub_prefix">Selected: %1$s</string>
+    <string name="settings_engine_local_sub_default">Gemma and Whisper downloads</string>
+    <string name="settings_cloud_section">Cloud Settings (Gemini)</string>
+    <string name="settings_cloud_model">Cloud Model</string>
+    <string name="settings_local_section">Local Model Settings</string>
+    <string name="settings_local_manage">Manage Models</string>
+    <string name="settings_local_manage_sub">Download or delete local AI models</string>
+    <string name="settings_transcriber_section">Transcriber Settings</string>
+    <string name="settings_default_language">Default Language</string>
+    <string name="settings_app_language">App Language</string>
+    <string name="settings_updates_section">App Updates</string>
+    <string name="settings_updates_check">Check for Updates</string>
+    <string name="settings_updates_check_sub">Manually check if a new version is available</string>
+    <string name="settings_updates_changelog">View Changelog</string>
+    <string name="settings_updates_changelog_sub">"See what's new in recent releases"</string>
+    <string name="settings_bg_run">Run in Background</string>
+    <string name="settings_cancel_transcription">Cancel Transcription</string>
+    <string name="settings_section_language">App Language</string>
+    <string name="settings_language_summary">Choose your preferred language</string>
+    <string name="settings_language_system">System Default</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_italian">Italiano</string>
+    <string name="btn_cancel">Cancel</string>
+
+    <!-- History strings -->
+    <string name="history_title">History</string>
+    <string name="delete_transcription_title">Delete Transcription</string>
+    <string name="delete_transcription_message">Do you want to delete this transcription? This action cannot be undone.</string>
+    <string name="delete_transcriptions_title">Delete Transcriptions</string>
+    <string name="delete_transcriptions_message">Do you want to delete %1$d selected transcriptions? This action cannot be undone.</string>
+    <string name="btn_delete">Delete</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="search_placeholder">Search transcriptions...</string>
+
+    <!-- Model Manager strings -->
+    <string name="model_manager_title">Model Manager</string>
+    <string name="content_desc_back">Back</string>
+    <string name="content_desc_refresh_catalog">Refresh catalog</string>
+    <string name="loading_catalog">Loading catalog...</string>
+    <string name="status_downloaded">Downloaded</string>
+    <string name="status_available">Available</string>
+    <string name="no_models_available">No models available</string>
+    <string name="btn_refresh">Refresh</string>
+    <string name="storage_available">Available Storage</string>
+    <string name="backend_all">All</string>
+    <string name="backend_gemma">Gemma</string>
+    <string name="backend_whisper">Whisper</string>
+    <string name="search_models_placeholder">Search models</string>
+    <string name="content_desc_clear_search">Clear search</string>
+    <string name="chip_downloaded">Downloaded</string>
+    <string name="chip_multilingual">Multilingual</string>
+    <string name="chip_quantized">Quantized</string>
+    <string name="chip_fits_device">Fits device</string>
+    <string name="status_selected">Selected</string>
+    <string name="status_tap_to_select">Tap to select</string>
+    <string name="content_desc_delete_model">Delete model</string>
+    <string name="ram_requirement_warning">Requires %1$d GB RAM (your device: %2$d GB)</string>
+    <string name="btn_download">Download</string>
+
+    <!-- Languages -->
+    <string name="lang_italian">Italian</string>
+    <string name="lang_english">English</string>
+    <string name="lang_spanish">Spanish</string>
+    <string name="lang_french">French</string>
+    <string name="lang_german">German</string>
+    <string name="lang_portuguese">Portuguese</string>
+    <string name="lang_russian">Russian</string>
+    <string name="lang_chinese">Chinese</string>
+    <string name="lang_japanese">Japanese</string>
+    <string name="lang_arabic">Arabic</string>
+
+    <!-- Transcriber Screen & Service notifications -->
+    <string name="engine_cloud">Cloud</string>
+    <string name="engine_aicore">AICore</string>
+    <string name="engine_local_fallback">Local</string>
+    <string name="engine_cloud_label">Cloud (Gemini API)</string>
+    <string name="engine_aicore_label">AICore (On-Device)</string>
+    <string name="engine_local_label">Local Model</string>
+    <string name="status_refining">Refining text...</string>
+    <string name="title_transcribing_error">Transcriber Error</string>
+    <string name="notif_starting">Starting transcription...</string>
+    <string name="notif_transcribing">Transcribing...</string>
+    <string name="notif_transcribing_preview">Transcribing: %1$s</string>
+    <string name="notif_refining">Refining text...</string>
+    <string name="notif_refining_preview">Refining: %1$s</string>
+    <string name="notif_complete_title">Transcriber Complete</string>
+    <string name="toast_no_transcription_to_copy">No completed transcription to copy.</string>
+    <string name="btn_copy_notification">Copy</string>
+    <string name="notif_initializing">Initializing...</string>
+    <string name="notif_failed">Transcription failed.</string>
+    <string name="select_local_model">Select a model</string>
+
+    <!-- Transcriber Screen strings -->
+    <string name="model_ready_prefix">Model Ready: %1$s</string>
+    <string name="model_missing_warning">No local models downloaded. Go to Settings → Manage Models.</string>
+    <string name="aicore_active_info">Using on-device AICore engine</string>
+    <string name="btn_back_to_setup">Back to Setup / Change Engine</string>
 </resources>

@@ -24,8 +24,8 @@ android {
         applicationId = "com.anomalyzed.simpletranscriber"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "1.1.1"
+        versionCode = 7
+        versionName = "1.2.0"
 
         // Espone la chiave API come costante BuildConfig accessibile nel codice Kotlin
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")
@@ -45,7 +45,6 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            resValue("string", "app_name", "Transcriber Debug")
         }
         release {
             isMinifyEnabled = false
@@ -79,6 +78,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

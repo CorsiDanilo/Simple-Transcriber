@@ -8,15 +8,15 @@ A privacy-focused Android application for high-quality audio transcription and t
 
 ## Features
 
-- **Hybrid transcription engines**: choose Gemini Cloud for high accuracy or LiteRT-LM for private offline transcription.
-- **Single-pass Gemini refinement**: Gemini Cloud now transcribes and refines in one multimodal request, so the app returns the final cleaned text without showing a raw intermediate transcript.
+- **Hybrid transcription engines**: choose Gemini Cloud for high accuracy, LiteRT-LM or Whisper.cpp for private offline transcription.
+- **Single-pass Gemini refinement**: Gemini Cloud transcribes and refines in one multimodal request, returning the final cleaned text directly.
 - **Multiple concurrent transcriptions**: each transcription gets its own foreground notification and progress state.
 - **Notification controls**: reopen a specific transcription from its notification, cancel an ongoing job, or copy the final transcript directly from the completed notification.
 - **Background execution**: send only the Transcriber dialog to background while the source app stays in the foreground.
 - **Transcription history**: store, search, copy, and delete previous transcriptions locally with Room.
-- **On-device model manager**: download, select, and delete LiteRT-LM models inside the app.
+- **On-device model manager**: download, select, and delete LiteRT-LM and Whisper.cpp models inside the app.
 - **In-app updates**: check GitHub releases manually, view markdown changelogs, and install APK updates.
-- **English UI labels**: dialogs, history actions, updater text, and notification actions use consistent English wording.
+- **Italian localization**: full Italian translation with a runtime language selector in Settings (System Default / English / Italian).
 
 ## Tech Stack
 

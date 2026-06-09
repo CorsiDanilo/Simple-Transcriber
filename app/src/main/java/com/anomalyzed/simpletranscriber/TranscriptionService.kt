@@ -1,6 +1,7 @@
 package com.anomalyzed.simpletranscriber
 
 import android.app.NotificationChannel
+import com.anomalyzed.simpletranscriber.R
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
@@ -80,8 +81,8 @@ class TranscriptionService : Service() {
                     startForeground(
                         notificationId(transcriptionId),
                         createNotification(
-                            title = "Transcriber",
-                            text = "Starting transcription...",
+                            title = getString(R.string.app_name),
+                            text = getString(R.string.notif_starting),
                             ongoing = true,
                             autoCancel = false,
                             pendingIntent = createDefaultPendingIntent(transcriptionId),
@@ -113,12 +114,12 @@ class TranscriptionService : Service() {
                 if (transcriptionId == MainActivity.NO_TRANSCRIPTION_ID) return START_NOT_STICKY
                 val textExtra = intent.getStringExtra(EXTRA_NOTIFICATION_TEXT)
                 val titleExtra = intent.getStringExtra(EXTRA_NOTIFICATION_TITLE)
-                val displayText = textExtra?.ifBlank { "Transcribing..." }
+                val displayText = textExtra?.ifBlank { getString(R.string.notif_transcribing) }
                 if (displayText != null) {
                     startForeground(
                         notificationId(transcriptionId),
                         createNotification(
-                            title = titleExtra ?: "Transcriber",
+                            title = titleExtra ?: getString(R.string.app_name),
                             text = displayText,
                             ongoing = true,
                             autoCancel = false,
@@ -136,7 +137,7 @@ class TranscriptionService : Service() {
 
     private fun startTranscription(transcriptionId: Long, uri: Uri) {
         val transcriptionJob = scope.launch(start = CoroutineStart.LAZY) {
-            TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Loading("Initializing..."))
+            TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Loading(getString(R.string.notif_initializing)))
             var engine: TranscriptionEngine? = null
             try {
                 val settings = prefManager.settingsFlow.first()
@@ -155,7 +156,7 @@ class TranscriptionService : Service() {
                         TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Loading(progressMessage))
                         updateNotification(
                             transcriptionId = transcriptionId,
-                            title = "Transcriber",
+                            title = getString(R.string.app_name),
                             text = progressMessage,
                             ongoing = true,
                             autoCancel = false,
@@ -166,13 +167,13 @@ class TranscriptionService : Service() {
                         TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Streaming(text, isRefining = false))
                         val preview = buildPreview(text)
                         val displayText = if (preview.isNotEmpty()) {
-                            "Transcribing: $preview"
+                            getString(R.string.notif_transcribing_preview, preview)
                         } else {
-                            "Transcribing..."
+                            getString(R.string.notif_transcribing)
                         }
                         updateNotification(
                             transcriptionId = transcriptionId,
-                            title = "Transcriber",
+                            title = getString(R.string.app_name),
                             text = displayText,
                             ongoing = true,
                             autoCancel = false,
@@ -186,11 +187,11 @@ class TranscriptionService : Service() {
                         val finalText = if (engine.performsRefinementDuringTranscription()) {
                             result.text
                         } else {
-                            TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Loading("Refining text..."))
+                            TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Loading(getString(R.string.notif_refining)))
                             updateNotification(
                                 transcriptionId = transcriptionId,
-                                title = "Transcriber",
-                                text = "Refining text...",
+                                title = getString(R.string.app_name),
+                                text = getString(R.string.notif_refining),
                                 ongoing = true,
                                 autoCancel = false,
                                 pendingIntent = createDefaultPendingIntent(transcriptionId)
@@ -199,13 +200,13 @@ class TranscriptionService : Service() {
                                 TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Streaming(text, isRefining = true))
                                 val preview = buildPreview(text)
                                 val displayText = if (preview.isNotEmpty()) {
-                                    "Refining: $preview"
+                                    getString(R.string.notif_refining_preview, preview)
                                 } else {
-                                    "Refining..."
+                                    getString(R.string.notif_refining)
                                 }
                                 updateNotification(
                                     transcriptionId = transcriptionId,
-                                    title = "Transcriber",
+                                    title = getString(R.string.app_name),
                                     text = displayText,
                                     ongoing = true,
                                     autoCancel = false,
@@ -226,7 +227,7 @@ class TranscriptionService : Service() {
             } catch (e: CancellationException) {
                 TranscriptionManager.clearTask(transcriptionId)
             } catch (e: Exception) {
-                val msg = e.localizedMessage ?: "Transcription failed."
+                val msg = e.localizedMessage ?: getString(R.string.notif_failed)
                 TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(msg))
                 showErrorNotification(transcriptionId, msg)
             } finally {
@@ -240,7 +241,7 @@ class TranscriptionService : Service() {
     }
 
     private fun cancelTranscription(transcriptionId: Long) {
-        activeTranscriptionJobs.remove(transcriptionId)?.cancel(CancellationException("Transcription cancelled."))
+        activeTranscriptionJobs.remove(transcriptionId)?.cancel(CancellationException(getString(R.string.settings_cancel_transcription)))
         TranscriptionManager.clearTask(transcriptionId)
 
         val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -253,13 +254,13 @@ class TranscriptionService : Service() {
         val state = TranscriptionManager.getTaskState(transcriptionId) as? TranscriberUiState.Success
         val text = state?.text.orEmpty()
         if (text.isBlank()) {
-            Toast.makeText(this, "No completed transcription to copy.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, getString(R.string.toast_no_transcription_to_copy), Toast.LENGTH_SHORT).show()
             return
         }
 
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        clipboard.setPrimaryClip(ClipData.newPlainText("Transcriber", text))
-        Toast.makeText(this, "Copied!", Toast.LENGTH_SHORT).show()
+        clipboard.setPrimaryClip(ClipData.newPlainText(getString(R.string.app_name), text))
+        Toast.makeText(this, getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
     }
 
     private fun finishServiceIfIdle(removeForegroundNotification: Boolean = false) {
@@ -285,7 +286,7 @@ class TranscriptionService : Service() {
     private fun promoteForegroundNotification() {
         val transcriptionId = activeTranscriptionJobs.keys.firstOrNull() ?: return
         val state = TranscriptionManager.getTaskState(transcriptionId)
-            ?: TranscriberUiState.Loading("Transcribing...")
+            ?: TranscriberUiState.Loading(getString(R.string.notif_transcribing))
         val payload = buildNotificationPayload(transcriptionId, state) ?: return
         if (!payload.ongoing) return
 
@@ -336,7 +337,7 @@ class TranscriptionService : Service() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Transcriber",
+                getString(R.string.app_name),
                 NotificationManager.IMPORTANCE_LOW
             )
             val manager = getSystemService(NotificationManager::class.java)
@@ -418,7 +419,7 @@ class TranscriptionService : Service() {
         if (ongoing) {
             builder.addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                "Cancel",
+                getString(R.string.btn_cancel),
                 createCancelPendingIntent(transcriptionId)
             )
         }
@@ -430,7 +431,7 @@ class TranscriptionService : Service() {
         if (showCopyAction) {
             builder.addAction(
                 android.R.drawable.ic_menu_save,
-                "Copy",
+                getString(R.string.btn_copy_notification),
                 createCopyPendingIntent(transcriptionId)
             )
         }
@@ -477,9 +478,9 @@ class TranscriptionService : Service() {
     private fun buildNotificationPayload(transcriptionId: Long, state: TranscriberUiState): NotificationPayload? {
         return when (state) {
             is TranscriberUiState.Loading -> {
-                val text = state.progressMessage.ifBlank { "Transcribing..." }
+                val text = state.progressMessage.ifBlank { getString(R.string.notif_transcribing) }
                 NotificationPayload(
-                    title = "Transcriber",
+                    title = getString(R.string.app_name),
                     text = text,
                     ongoing = true,
                     autoCancel = false,
@@ -489,12 +490,12 @@ class TranscriptionService : Service() {
             is TranscriberUiState.Streaming -> {
                 val preview = buildPreview(state.partialText)
                 val text = if (state.isRefining) {
-                    if (preview.isNotEmpty()) "Refining: $preview" else "Refining..."
+                    if (preview.isNotEmpty()) getString(R.string.notif_refining_preview, preview) else getString(R.string.notif_refining)
                 } else {
-                    if (preview.isNotEmpty()) "Transcribing: $preview" else "Transcribing..."
+                    if (preview.isNotEmpty()) getString(R.string.notif_transcribing_preview, preview) else getString(R.string.notif_transcribing)
                 }
                 NotificationPayload(
-                    title = "Transcriber",
+                    title = getString(R.string.app_name),
                     text = text,
                     ongoing = true,
                     autoCancel = false,
@@ -503,7 +504,7 @@ class TranscriptionService : Service() {
             }
             is TranscriberUiState.Success -> {
                 NotificationPayload(
-                    title = "Transcriber Complete",
+                    title = getString(R.string.notif_complete_title),
                     text = state.text,
                     ongoing = false,
                     autoCancel = true,
@@ -514,7 +515,7 @@ class TranscriptionService : Service() {
             }
             is TranscriberUiState.Error -> {
                 NotificationPayload(
-                    title = "Transcriber Error",
+                    title = getString(R.string.title_transcribing_error),
                     text = state.message,
                     ongoing = false,
                     autoCancel = true,
@@ -572,7 +573,7 @@ class TranscriptionService : Service() {
     private fun showSuccessNotification(transcriptionId: Long, text: String) {
         updateNotification(
             transcriptionId = transcriptionId,
-            title = "Transcriber Complete",
+            title = getString(R.string.notif_complete_title),
             text = text,
             ongoing = false,
             autoCancel = true,
@@ -585,7 +586,7 @@ class TranscriptionService : Service() {
     private fun showErrorNotification(transcriptionId: Long, msg: String) {
         updateNotification(
             transcriptionId = transcriptionId,
-            title = "Transcriber Error",
+            title = getString(R.string.title_transcribing_error),
             text = msg,
             ongoing = false,
             autoCancel = true,

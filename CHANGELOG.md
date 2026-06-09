@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.2.0] - 2026-06-09
+### Added
+- **Full Italian localization**: the app UI, notifications, and dialogs are now fully translated into Italian.
+- Language selector in Settings: switch between System Default, English, and Italian at runtime without restarting the app (powered by `AppCompatDelegate.setApplicationLocales`).
+- All notification strings (titles, progress messages, action buttons) respect the selected language.
+
+### Changed
+- Migrated from a custom DataStore-based `uiLanguage` preference to the standard Android per-app locale API (`AppCompatDelegate`).
+- Date formatting in the transcription history now uses the device locale instead of a hardcoded English format.
+- Migrated the app theme to `Theme.AppCompat.NoActionBar` for full `AppCompatActivity` compatibility.
+
+### Fixed
+- Several UI labels in ModelManagerScreen, TranscriberScreen, and HistoryScreen that were hardcoded in English are now resolved through string resources and appear correctly in Italian when the language is set.
+
 ## [1.1.1] - 2026-06-04
 ### Fixed
 - Hardened the APK update flow with release asset integrity checks and signer verification.

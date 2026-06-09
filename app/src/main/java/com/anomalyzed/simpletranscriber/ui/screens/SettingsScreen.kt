@@ -29,6 +29,10 @@ import com.anomalyzed.simpletranscriber.engine.EngineType
 import com.anomalyzed.simpletranscriber.ui.theme.DarkGray
 import com.anomalyzed.simpletranscriber.ui.theme.Gold
 import kotlin.math.roundToInt
+import androidx.compose.ui.res.stringResource
+import com.anomalyzed.simpletranscriber.R
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.os.LocaleListCompat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,12 +49,23 @@ fun SettingsScreen(
     onCheckForUpdates: () -> Unit,
     onViewChangelog: () -> Unit
 ) {
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    val currentLanguageCode = remember { 
+        AppCompatDelegate.getApplicationLocales().get(0)?.language ?: "" 
+    }
+    
+    val currentLanguageLabel = when (currentLanguageCode) {
+        "en" -> stringResource(R.string.settings_language_english)
+        "it" -> stringResource(R.string.settings_language_italian)
+        else -> stringResource(R.string.settings_language_system)
+    }
+
     var isApiKeyVisible by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings", fontWeight = FontWeight.Bold) },
+                title = { Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null) }
                 }
@@ -68,12 +83,12 @@ fun SettingsScreen(
             val currentEngine = EngineType.fromKey(settings.transcriptionEngine)
 
             // ── Transcription Engine ──
-            SettingSection("Transcriber Engine") {
+            SettingSection(stringResource(R.string.settings_engine_section)) {
                 // Cloud
                 EngineOption(
                     icon = Icons.Default.Cloud,
-                    title = "Cloud (Gemini API)",
-                    subtitle = "Requires API Key & Internet",
+                    title = stringResource(R.string.settings_engine_cloud),
+                    subtitle = stringResource(R.string.settings_engine_cloud_sub),
                     isSelected = currentEngine == EngineType.CLOUD,
                     isEnabled = true,
                     onClick = { onUpdateTranscriptionEngine(EngineType.CLOUD.key) }
@@ -84,11 +99,11 @@ fun SettingsScreen(
                 // AICore
                 EngineOption(
                     icon = Icons.Default.Memory,
-                    title = "AICore (On-Device)",
+                    title = stringResource(R.string.settings_engine_aicore),
                     subtitle = if (isAICoreAvailable) {
-                        "System-managed, no setup needed"
+                        stringResource(R.string.settings_engine_aicore_sub_ready)
                     } else {
-                        "⚠️ Not available on this device"
+                        stringResource(R.string.settings_engine_aicore_sub_missing)
                     },
                     isSelected = currentEngine == EngineType.AICORE,
                     isEnabled = isAICoreAvailable,
@@ -100,11 +115,11 @@ fun SettingsScreen(
                 // Local models
                 EngineOption(
                     icon = Icons.Default.PhoneAndroid,
-                    title = "Local Model",
+                    title = stringResource(R.string.settings_engine_local),
                     subtitle = if (selectedModelName.isNotBlank()) {
-                        "Selected: $selectedModelName"
+                        stringResource(R.string.settings_engine_local_sub_prefix, selectedModelName)
                     } else {
-                        "Gemma and Whisper downloads"
+                        stringResource(R.string.settings_engine_local_sub_default)
                     },
                     isSelected = currentEngine == EngineType.LITERT,
                     isEnabled = true,
@@ -115,12 +130,12 @@ fun SettingsScreen(
             // ── Dynamic Settings based on Engine ──
             if (currentEngine == EngineType.CLOUD) {
                 // ── Cloud Settings (Gemini) ──
-                SettingSection("Cloud Settings (Gemini)") {
+                SettingSection(stringResource(R.string.settings_cloud_section)) {
                     // API Key
                     OutlinedTextField(
                         value = settings.apiKey,
                         onValueChange = onUpdateApiKey,
-                        label = { Text("Gemini API Key") },
+                        label = { Text(stringResource(R.string.label_api_key)) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         visualTransformation = if (isApiKeyVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -137,7 +152,7 @@ fun SettingsScreen(
                     Spacer(Modifier.height(8.dp))
 
                     // Model Selection
-                    Text("Cloud Model", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                    Text(stringResource(R.string.settings_cloud_model), fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
                     
                     val cloudModels = listOf(
                         "gemini-flash-latest" to "Gemini Flash (Latest)",
@@ -154,20 +169,21 @@ fun SettingsScreen(
                 }
             } else if (currentEngine == EngineType.LITERT) {
                 // ── Local Model Settings ──
-                SettingSection("Local Model Settings") {
+                SettingSection(stringResource(R.string.settings_local_section)) {
                     SettingItem(
                         icon = Icons.Default.Settings,
-                        title = "Manage Models",
-                        subtitle = "Download or delete local AI models",
+                        title = stringResource(R.string.settings_local_manage),
+                        subtitle = stringResource(R.string.settings_local_manage_sub),
                         onClick = onNavigateToModelManager
                     )
                 }
             }
 
             // ── Transcription ──
-            SettingSection("Transcriber Settings") {
-                Text("Default Language", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
-                
+            SettingSection(stringResource(R.string.settings_transcriber_section)) {
+                // Default Language (Target language)
+                Text(stringResource(R.string.settings_default_language), fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                Spacer(Modifier.height(4.dp))
                 var expanded by remember { mutableStateOf(false) }
                 val languages = listOf("Italian", "English", "Spanish", "French", "German")
 
@@ -200,25 +216,86 @@ fun SettingsScreen(
                         }
                     }
                 }
+
+            }
+
+            // ── App Language ──
+            SettingSection(stringResource(R.string.settings_section_language)) {
+                SettingItem(
+                    icon = Icons.Default.Language,
+                    title = stringResource(R.string.settings_section_language),
+                    subtitle = currentLanguageLabel,
+                    onClick = { showLanguageDialog = true }
+                )
             }
 
             // ── Updates ──
-            SettingSection("App Updates") {
+            SettingSection(stringResource(R.string.settings_updates_section)) {
                 SettingItem(
                     icon = Icons.Default.SystemUpdate,
-                    title = "Check for Updates",
-                    subtitle = "Manually check if a new version is available",
+                    title = stringResource(R.string.settings_updates_check),
+                    subtitle = stringResource(R.string.settings_updates_check_sub),
                     onClick = onCheckForUpdates
                 )
                 HorizontalDivider(color = Color.DarkGray, thickness = 0.5.dp)
                 SettingItem(
                     icon = Icons.Default.Article,
-                    title = "View Changelog",
-                    subtitle = "See what's new in recent releases",
+                    title = stringResource(R.string.settings_updates_changelog),
+                    subtitle = stringResource(R.string.settings_updates_changelog_sub),
                     onClick = onViewChangelog
                 )
             }
         }
+    }
+
+    if (showLanguageDialog) {
+        val languages = listOf(
+            "" to stringResource(R.string.settings_language_system),
+            "en" to stringResource(R.string.settings_language_english),
+            "it" to stringResource(R.string.settings_language_italian)
+        )
+
+        AlertDialog(
+            onDismissRequest = { showLanguageDialog = false },
+            title = { Text(stringResource(R.string.settings_section_language)) },
+            text = {
+                Column {
+                    languages.forEach { (code, label) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    val localeList = if (code.isEmpty()) {
+                                        LocaleListCompat.getEmptyLocaleList()
+                                    } else {
+                                        LocaleListCompat.forLanguageTags(code)
+                                    }
+                                    AppCompatDelegate.setApplicationLocales(localeList)
+                                    showLanguageDialog = false
+                                }
+                                .padding(vertical = 12.dp, horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = currentLanguageCode == code,
+                                onClick = null,
+                                colors = RadioButtonDefaults.colors(selectedColor = Gold)
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showLanguageDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel), color = Gold)
+                }
+            }
+        )
     }
 }
 
@@ -281,7 +358,7 @@ fun SettingSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(title, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
         SettingsCard {
-            Column(modifier = Modifier.fillMaxWidth()) { // Corretto: rimosso content=content
+            Column(modifier = Modifier.fillMaxWidth()) {
                 content()
             }
         }

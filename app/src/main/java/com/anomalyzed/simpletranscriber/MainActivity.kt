@@ -9,7 +9,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -55,8 +55,14 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.launch
 import java.io.File
+import android.content.res.Configuration
+import android.os.LocaleList
+import java.util.Locale
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.first
+import com.anomalyzed.simpletranscriber.data.PreferenceManager
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_SHOW_TRANSCRIBER_DIALOG = "EXTRA_SHOW_TRANSCRIBER_DIALOG"
@@ -151,6 +157,13 @@ class MainActivity : ComponentActivity() {
             val isModelDownloaded = selectedModelInfo?.status == com.anomalyzed.simpletranscriber.data.ModelStatus.Selected || 
                                     selectedModelInfo?.status == com.anomalyzed.simpletranscriber.data.ModelStatus.Downloaded
 
+            val downloadedModels = remember(modelsWithStatus) {
+                modelsWithStatus.filter { 
+                    it.status is com.anomalyzed.simpletranscriber.data.ModelStatus.Selected || 
+                    it.status is com.anomalyzed.simpletranscriber.data.ModelStatus.Downloaded
+                }.map { it.info }
+            }
+
             TranscriberTheme {
                 if (isShareFlow || showTranscriberDialog) {
                     // In modalita condivisione/notifica mostriamo solo il popup del transcriber.
@@ -180,6 +193,9 @@ class MainActivity : ComponentActivity() {
                         selectedModelName = selectedModelName,
                         isModelDownloaded = isModelDownloaded,
                         isAICoreAvailable = mainViewModel.isAICoreAvailable,
+                        downloadedModels = downloadedModels,
+                        currentLocalModelId = settings.selectedModelId,
+                        onUpdateLocalModel = { mainViewModel.updateSelectedModel(it) },
                         onDismiss = dismissAction,
                         onCopyToClipboard = { text -> copyToClipboard(text) },
                         onCancelTranscription = { transcriberViewModel.cancelTranscription(this@MainActivity) },
@@ -212,13 +228,13 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             composable("settings") {
-                                SettingsScreen(
-                                    settings = settings,
-                                    isAICoreAvailable = mainViewModel.isAICoreAvailable,
-                                    selectedModelName = selectedModelName,
-                                    onNavigateBack = { navController.popBackStack() },
-                                    onUpdateLanguage = { mainViewModel.updateLanguage(it) },
-                                    onUpdateTranscriptionEngine = { mainViewModel.updateTranscriptionEngine(it) },
+                                 SettingsScreen(
+                                     settings = settings,
+                                     isAICoreAvailable = mainViewModel.isAICoreAvailable,
+                                     selectedModelName = selectedModelName,
+                                     onNavigateBack = { navController.popBackStack() },
+                                     onUpdateLanguage = { mainViewModel.updateLanguage(it) },
+                                     onUpdateTranscriptionEngine = { mainViewModel.updateTranscriptionEngine(it) },
                                     onUpdateApiKey = { mainViewModel.updateApiKey(it) },
                                     onUpdateSelectedCloudModel = { mainViewModel.updateSelectedCloudModel(it) },
                                     onNavigateToModelManager = { navController.navigate("model_manager") },

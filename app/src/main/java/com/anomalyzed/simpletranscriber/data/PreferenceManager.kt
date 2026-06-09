@@ -24,7 +24,7 @@ class PreferenceManager(private val context: Context) {
         val SELECTED_MODEL_ID = stringPreferencesKey("selected_model_id")
         val SELECTED_CLOUD_MODEL = stringPreferencesKey("selected_cloud_model")
         val MODEL_CATALOG_URL = stringPreferencesKey("model_catalog_url")
-
+        
         const val DEFAULT_CATALOG_URL =
             "https://raw.githubusercontent.com/CorsiDanilo/simple-transcription-app/main/models.json"
     }
