@@ -1,16 +1,14 @@
-# Project Documentation
+# Documentation Index
 
-Welcome to the Transcriber technical documentation. This directory contains architecture, setup, deployment, and engine details.
+Welcome to the project documentation.
 
-## Index
+## Table of Contents
 
-1. [Overview](01-overview.md): High-level goals and current capabilities.
-2. [Project Structure](02-structure.md): Package and module responsibilities.
-3. [Setup and Installation](03-setup.md): Local development guide.
-4. [Deployment and CI/CD](04-deployment.md): Release workflow, tags, and signing.
-5. [Transcription Engines](05-transcription-engines.md): Cloud and on-device processing details.
-6. [Data Persistence](06-data-persistence.md): Room and DataStore implementation details.
-
-## Suggested Reading Order
-
-Start with the setup guide, then read the engine and deployment docs if you are working on transcription behavior or releases.
+01. [01 - Project Overview](./01-overview.md)
+02. [02 - Project Structure](./02-structure.md)
+03. [03 - Setup & Installation ⚙️](./03-setup.md)
+04. [Training Pipeline](./04-training-pipeline.md)
+05. [05 - Transcription Engines](./05-model-serving.md)
+06. [06 - Data Persistence 💾](./06-data-schema.md)
+07. [Evaluation & Metrics](./07-evaluation.md)
+08. [04 - Deployment and CI/CD](./08-deployment.md)

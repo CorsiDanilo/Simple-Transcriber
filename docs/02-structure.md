@@ -1,3 +1,5 @@
+[⬅ Previous](./01-overview.md) | [🏠 Index](./README.md) | [Next ➡](./03-setup.md)
+
 # 02 - Project Structure
 
 The project follows a standard Android layout with a focus on separating UI, transcription orchestration, engine implementations, and persistence.
@@ -42,3 +44,5 @@ The project follows a standard Android layout with a focus on separating UI, tra
 
 - **`assets/`**: Static assets such as the app icon.
 - **`res/`**: Android resources including strings, themes, icons, and XML file providers.
+
+[⬅ Previous](./01-overview.md) | [🏠 Index](./README.md) | [Next ➡](./03-setup.md)

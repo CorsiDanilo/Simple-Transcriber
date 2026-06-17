@@ -1,3 +1,5 @@
+[⬅ Previous](./02-structure.md) | [🏠 Index](./README.md) | [Next ➡](./04-training-pipeline.md)
+
 # 03 - Setup & Installation ⚙️
 
 ## Development Environment
@@ -60,3 +62,5 @@ If you are setting up the project for the first time or if the submodule folder 
 
 - **Out of Memory during build**: Ensure you have enough RAM allocated to Gradle in `gradle.properties` (`org.gradle.jvmargs=-Xmx2048m`).
 - **LiteRT errors**: Some LiteRT models require a minimum of 4GB of RAM on the device to run efficiently.
+
+[⬅ Previous](./02-structure.md) | [🏠 Index](./README.md) | [Next ➡](./04-training-pipeline.md)

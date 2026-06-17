@@ -1,3 +1,5 @@
+[⬅ Previous](./04-training-pipeline.md) | [🏠 Index](./README.md) | [Next ➡](./06-data-schema.md)
+
 # 05 - Transcription Engines
 
 The application uses a strategy interface so transcription backends can be swapped without changing the UI or service orchestration.
@@ -76,3 +78,19 @@ Each transcription has its own notification:
 ## Resource Management
 
 Parallel jobs are supported, but LiteRT jobs can be expensive because each job may initialize model resources. The service keeps foreground status while any job is active and stops itself when all active jobs finish or are cancelled.
+
+## OpenAPI Specification (Swagger)
+
+```yaml
+openapi: 3.0.3
+
+info:
+  title: simple-transcription-app API
+  version: 1.0.0
+  description: Auto-generated OpenAPI specification for simple-transcription-app
+
+paths:
+  {}
+```
+
+[⬅ Previous](./04-training-pipeline.md) | [🏠 Index](./README.md) | [Next ➡](./06-data-schema.md)

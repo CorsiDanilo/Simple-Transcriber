@@ -17,3 +17,6 @@ local.properties
 *.iws
 *.iml
 captures/
+
+# Others
+.docgen-agent

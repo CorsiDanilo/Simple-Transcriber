@@ -1,3 +1,5 @@
+[🏠 Index](./README.md) | [Next ➡](./02-structure.md)
+
 # 01 - Project Overview
 
 ## Introduction
@@ -31,3 +33,5 @@ Transcriber is an Android application for converting audio into readable text wh
 - [ ] Speaker diarization.
 - [ ] Expanded on-device model support, including production AICore integration.
 - [ ] Export options for PDF, TXT, and Markdown.
+
+[🏠 Index](./README.md) | [Next ➡](./02-structure.md)

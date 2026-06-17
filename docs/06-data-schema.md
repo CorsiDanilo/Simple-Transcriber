@@ -1,3 +1,5 @@
+[⬅ Previous](./05-model-serving.md) | [🏠 Index](./README.md) | [Next ➡](./07-evaluation.md)
+
 # 06 - Data Persistence 💾
 
 Transcriber uses two main technologies for data persistence: **Room** for structured data and **DataStore** for user preferences.
@@ -43,3 +45,63 @@ LiteRT models are large files (2GB+). They are stored in the app's internal stor
 - Verifying file integrity.
 - Calculating available space.
 - Mapping model IDs to local file paths.
+
+## Class Diagram
+
+```mermaid
+classDiagram
+    class WhisperCppDemoApp
+    class UpdateInfo
+    class TestVADSegments
+    class TestVADSegment
+    class ExampleUnitTest
+    class Whisper
+    class Model
+    class TestError
+    class TestVAD
+    class TestBase
+    class ExampleInstrumentedTest
+    class MainActivity
+    class Recorder
+    class RecorderError
+    class Whisper
+    class TranscriptionItem
+    class AppDatabase
+    class Dependencies
+    class TestPackage
+    class BasicTextNormalizer {
+        +init()
+        +call()
+    }
+    class BasicTextNormalizer {
+        +init()
+        +call()
+    }
+    class TestContextParams
+    class Options
+    class CpuInfo
+    class model {
+        +Close()
+        +String()
+        +IsMultilingual()
+        +NewContext()
+    }
+    class TestToken
+    class TranscriptionResult
+    class Success
+    class Error
+    class EngineType
+
+    TestBase <|-- TestVADSegments
+    TestBase <|-- TestVADSegment
+    TestBase <|-- TestError
+    TestBase <|-- TestVAD
+    Error <|-- RecorderError
+    TestBase <|-- TestPackage
+    TestBase <|-- TestContextParams
+    TestBase <|-- TestToken
+    TranscriptionResult <|-- Success
+    TranscriptionResult <|-- Error
+```
+
+[⬅ Previous](./05-model-serving.md) | [🏠 Index](./README.md) | [Next ➡](./07-evaluation.md)

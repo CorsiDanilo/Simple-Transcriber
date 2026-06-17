@@ -1,3 +1,5 @@
+[⬅ Previous](./07-evaluation.md) | [🏠 Index](./README.md)
+
 # 04 - Deployment and CI/CD
 
 Transcriber uses GitHub Actions to build signed APK releases when version tags are pushed.
@@ -45,3 +47,5 @@ For a release:
 - Version: `1.1.0`
 - Version code: `5`
 - Tag: `v1.1.0`
+
+[⬅ Previous](./07-evaluation.md) | [🏠 Index](./README.md)
