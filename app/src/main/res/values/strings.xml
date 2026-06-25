@@ -127,4 +127,23 @@
     <string name="google_models_empty">No available models found for this API Key.</string>
     <string name="google_models_key_required">Enter a valid Google API Key to load available models.</string>
     <string name="btn_retry">Retry</string>
+
+    <!-- Humanized error messages -->
+    <string name="error_no_internet">No internet connection. Check your network and try again.</string>
+    <string name="error_timeout">The request timed out. Check your connection and try again.</string>
+    <string name="error_cannot_connect">Cannot connect to the server. Check your internet connection.</string>
+    <string name="error_ssl">Secure connection failed. Check your network or try again later.</string>
+    <string name="error_api_key_invalid">Invalid or unauthorized API Key. Check your Google API key in Settings.</string>
+    <string name="error_quota_exceeded">API quota exceeded. Wait a few minutes and try again.</string>
+    <string name="error_server_unavailable">Google servers are temporarily unavailable. Try again later.</string>
+    <string name="error_safety_blocked">The audio content was blocked by safety filters.</string>
+    <string name="error_no_speech">No speech detected in the audio. Try a clearer recording.</string>
+    <string name="error_cannot_read_file">Cannot read the audio file. Check if the file is accessible.</string>
+    <string name="error_unsupported_format">Unsupported audio format. Try converting the file to a common format.</string>
+    <string name="error_no_local_model">No local model selected. Download a model in Settings → Manage Models.</string>
+    <string name="error_model_file_missing">Model file is missing. Re-download it in Settings → Manage Models.</string>
+    <string name="error_out_of_memory">Not enough memory to run the transcription. Close other apps and try again.</string>
+    <string name="error_aicore_unavailable">AICore is not available on this device. Use the Cloud or Local Model engine instead.</string>
+    <string name="error_aicore_pending">AICore engine integration is coming soon. Use Cloud or Local Model engine for now.</string>
+    <string name="error_generic">An unexpected error occurred. Please try again.</string>
 </resources>

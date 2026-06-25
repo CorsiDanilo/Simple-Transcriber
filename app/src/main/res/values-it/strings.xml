@@ -127,4 +127,23 @@
     <string name="google_models_empty">Nessun modello disponibile trovato per questa chiave API.</string>
     <string name="google_models_key_required">Inserisci una chiave API Google valida per caricare i modelli disponibili.</string>
     <string name="btn_retry">Riprova</string>
+
+    <!-- Messaggi di errore umanizzati -->
+    <string name="error_no_internet">Nessuna connessione internet. Controlla la rete e riprova.</string>
+    <string name="error_timeout">La richiesta è scaduta. Controlla la connessione e riprova.</string>
+    <string name="error_cannot_connect">Impossibile connettersi al server. Controlla la tua connessione internet.</string>
+    <string name="error_ssl">Connessione sicura fallita. Controlla le impostazioni di rete o riprova più tardi.</string>
+    <string name="error_api_key_invalid">Chiave API non valida o non autorizzata. Controlla la tua chiave API Google nelle Impostazioni.</string>
+    <string name="error_quota_exceeded">Quota API superata. Attendi qualche minuto e riprova.</string>
+    <string name="error_server_unavailable">I server Google sono temporaneamente non disponibili. Riprova più tardi.</string>
+    <string name="error_safety_blocked">Il contenuto audio è stato bloccato dai filtri di sicurezza.</string>
+    <string name="error_no_speech">Nessun parlato rilevato nell\'audio. Prova con una registrazione più chiara.</string>
+    <string name="error_cannot_read_file">Impossibile leggere il file audio. Verifica che il file sia accessibile.</string>
+    <string name="error_unsupported_format">Formato audio non supportato. Prova a convertire il file in un formato comune.</string>
+    <string name="error_no_local_model">Nessun modello locale selezionato. Scarica un modello in Impostazioni → Gestione Modelli.</string>
+    <string name="error_model_file_missing">File del modello mancante. Riscaricalo in Impostazioni → Gestione Modelli.</string>
+    <string name="error_out_of_memory">Memoria insufficiente per eseguire la trascrizione. Chiudi altre app e riprova.</string>
+    <string name="error_aicore_unavailable">AICore non è disponibile su questo dispositivo. Usa il motore Cloud o Modello Locale.</string>
+    <string name="error_aicore_pending">L\'integrazione del motore AICore è in arrivo. Per ora usa il motore Cloud o Modello Locale.</string>
+    <string name="error_generic">Si è verificato un errore imprevisto. Riprova.</string>
 </resources>

@@ -22,6 +22,7 @@ import com.anomalyzed.simpletranscriber.data.TranscriptionItem
 import com.anomalyzed.simpletranscriber.engine.AICoreEngine
 import com.anomalyzed.simpletranscriber.engine.CloudEngine
 import com.anomalyzed.simpletranscriber.engine.EngineType
+import com.anomalyzed.simpletranscriber.engine.ErrorHumanizer
 import com.anomalyzed.simpletranscriber.engine.LiteRTEngine
 import com.anomalyzed.simpletranscriber.engine.TranscriptionEngine
 import com.anomalyzed.simpletranscriber.engine.TranscriptionResult
@@ -220,16 +221,17 @@ class TranscriptionService : Service() {
                         showSuccessNotification(transcriptionId, finalText)
                     }
                     is TranscriptionResult.Error -> {
-                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(result.message))
-                        showErrorNotification(transcriptionId, result.message)
+                        val humanMsg = ErrorHumanizer.humanize(result.message, this@TranscriptionService)
+                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(humanMsg))
+                        showErrorNotification(transcriptionId, humanMsg)
                     }
                 }
             } catch (e: CancellationException) {
                 TranscriptionManager.clearTask(transcriptionId)
             } catch (e: Exception) {
-                val msg = e.localizedMessage ?: getString(R.string.notif_failed)
-                TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(msg))
-                showErrorNotification(transcriptionId, msg)
+                val humanMsg = ErrorHumanizer.humanize(e, this@TranscriptionService)
+                TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(humanMsg))
+                showErrorNotification(transcriptionId, humanMsg)
             } finally {
                 engine?.release()
                 activeTranscriptionJobs.remove(transcriptionId, coroutineContext[Job])

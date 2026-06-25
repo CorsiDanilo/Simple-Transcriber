@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1] - 2026-06-25
+### Fixed
+- Background transcription dialog no longer pops up unexpectedly when the app is in the background. A race-condition between the transcription completing and `onStop()` being called could leave the activity alive in a terminal state; both the `lifecycleScope` collector and a new `onStop()` guard now ensure the activity is finished silently on success.
+- On **error**, the activity is intentionally kept alive so the user can always return to the app (or tap the notification) to view the error dialog.
+
+### Added
+- **Humanized error messages**: technical exception strings are now translated into clear, user-friendly messages (localized in English and Italian). Categories include network issues, invalid/quota-exceeded API key, server unavailability, safety filter blocks, unsupported audio format, missing local model, out-of-memory, and more. Engine-level messages that are already user-friendly are preserved as-is.
+
 ## [1.2.0] - 2026-06-09
 ### Added
 - **Full Italian localization**: the app UI, notifications, and dialogs are now fully translated into Italian.

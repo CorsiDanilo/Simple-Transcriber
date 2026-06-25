@@ -53,6 +53,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import java.io.File
 import android.content.res.Configuration
@@ -76,6 +77,7 @@ class MainActivity : AppCompatActivity() {
     private var isShareFlow by mutableStateOf(false)
     private var showTranscriberDialog by mutableStateOf(false)
     private var startTranscriptionAfterNotificationPermission = false
+    private var isActivityVisible = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -89,6 +91,17 @@ class MainActivity : AppCompatActivity() {
         // Gestione Intent di condivisione (Transcriber)
         if (savedInstanceState == null && isShareFlow) {
             handleIncomingIntent()
+        }
+
+        lifecycleScope.launch {
+            transcriberViewModel.uiState.collect { state ->
+                // Only finish automatically on Success (notification has the result).
+                // On Error we keep the activity alive so the user can always open the
+                // dialog — either by returning to the app or by tapping the notification.
+                if (!isActivityVisible && state is TranscriberUiState.Success) {
+                    finish()
+                }
+            }
         }
 
         setContent {
@@ -441,6 +454,27 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Download error: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        isActivityVisible = true
+    }
+
+    override fun onStop() {
+        super.onStop()
+        isActivityVisible = false
+        // Race-condition guard: if the transcription succeeded in the brief window between
+        // the user pressing home and onStop being called, the collect lambda saw
+        // isActivityVisible=true and skipped finish(). Close it now.
+        // Errors are intentionally excluded: the user must always be able to return to
+        // the app (or tap the notification) to see the error dialog.
+        if (isShareFlow || showTranscriberDialog) {
+            val state = transcriberViewModel.uiState.value
+            if (state is TranscriberUiState.Success) {
+                finish()
+            }
         }
     }
 
