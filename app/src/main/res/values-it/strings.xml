@@ -1,22 +1,22 @@
 <resources>
     <string name="app_name">Transcriber</string>
     <string name="title_transcribing">Trascrizione in corso...</string>
-    <string name="info_gemini">Supportato da Gemini AI</string>
+    <string name="info_gemini">Supportato da Google AI</string>
     <string name="btn_copy">Copia negli appunti</string>
     <string name="btn_close">Chiudi</string>
     <string name="btn_start">Avvia Trascrizione</string>
     <string name="error_title">Si è verificato un errore</string>
-    <string name="label_api_key">Chiave API Gemini</string>
+    <string name="label_api_key">Chiave API Google</string>
     <string name="placeholder_api_key">Incolla qui la tua chiave API...</string>
     <string name="label_language">Lingua di destinazione</string>
-    <string name="msg_api_key_required">Inserisci la tua Chiave API Gemini. Puoi ottenerne una su aistudio.google.com</string>
+    <string name="msg_api_key_required">Inserisci la tua Chiave API Google. Puoi ottenerne una su aistudio.google.com</string>
     <string name="toast_copied">Copiato negli appunti!</string>
     <string name="msg_success_copy">Trascrizione copiata!</string>
 
     <!-- Settings strings -->
     <string name="settings_title">Impostazioni</string>
     <string name="settings_engine_section">Motore di Trascrizione</string>
-    <string name="settings_engine_cloud">Cloud (Gemini API)</string>
+    <string name="settings_engine_cloud">Cloud (Google)</string>
     <string name="settings_engine_cloud_sub">Richiede Chiave API e connessione Internet</string>
     <string name="settings_engine_aicore">AICore (Sul dispositivo)</string>
     <string name="settings_engine_aicore_sub_ready">Gestito dal sistema, nessuna configurazione richiesta</string>
@@ -24,7 +24,8 @@
     <string name="settings_engine_local">Modello Locale</string>
     <string name="settings_engine_local_sub_prefix">Selezionato: %1$s</string>
     <string name="settings_engine_local_sub_default">Download modelli Gemma e Whisper</string>
-    <string name="settings_cloud_section">Impostazioni Cloud (Gemini)</string>
+    <string name="settings_cloud_section">Impostazioni Cloud (Google)</string>
+    <string name="settings_cloud_model_family">Famiglia Modelli</string>
     <string name="settings_cloud_model">Modello Cloud</string>
     <string name="settings_local_section">Impostazioni Modello Locale</string>
     <string name="settings_local_manage">Gestione Modelli</string>
@@ -97,7 +98,7 @@
     <string name="engine_cloud">"Cloud"</string>
     <string name="engine_aicore">"AICore"</string>
     <string name="engine_local_fallback">"Locale"</string>
-    <string name="engine_cloud_label">"Cloud (Gemini API)"</string>
+    <string name="engine_cloud_label">"Cloud (Google)"</string>
     <string name="engine_aicore_label">"AICore (Sul dispositivo)"</string>
     <string name="engine_local_label">"Modello locale"</string>
     <string name="status_refining">"Perfezionamento del testo..."</string>
@@ -119,4 +120,11 @@
     <string name="model_missing_warning">Nessun modello locale scaricato. Vai a Impostazioni → Gestione Modelli.</string>
     <string name="aicore_active_info">Utilizzo del motore AICore sul dispositivo</string>
     <string name="btn_back_to_setup">Torna alla Configurazione / Cambia Motore</string>
+
+    <!-- Dynamic Google Models strings -->
+    <string name="google_models_loading">Caricamento modelli Google...</string>
+    <string name="google_models_error">Impossibile caricare i modelli Google. Verifica la chiave API o la connessione.</string>
+    <string name="google_models_empty">Nessun modello disponibile trovato per questa chiave API.</string>
+    <string name="google_models_key_required">Inserisci una chiave API Google valida per caricare i modelli disponibili.</string>
+    <string name="btn_retry">Riprova</string>
 </resources>

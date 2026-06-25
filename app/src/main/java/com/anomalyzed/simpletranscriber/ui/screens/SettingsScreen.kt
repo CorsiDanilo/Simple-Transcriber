@@ -47,9 +47,16 @@ fun SettingsScreen(
     onUpdateSelectedCloudModel: (String) -> Unit,
     onNavigateToModelManager: () -> Unit,
     onCheckForUpdates: () -> Unit,
-    onViewChangelog: () -> Unit
+    onViewChangelog: () -> Unit,
+    googleModels: List<Pair<String, String>> = emptyList(),
+    googleModelsLoading: Boolean = false,
+    googleModelsError: String? = null,
+    onRetryGoogleModels: () -> Unit = {}
 ) {
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var selectedFamily by remember(settings.selectedCloudModel) {
+        mutableStateOf(if (settings.selectedCloudModel.lowercase().contains("gemma")) "Gemma" else "Gemini")
+    }
     val currentLanguageCode = remember { 
         AppCompatDelegate.getApplicationLocales().get(0)?.language ?: "" 
     }
@@ -151,20 +158,143 @@ fun SettingsScreen(
 
                     Spacer(Modifier.height(8.dp))
 
-                    // Model Selection
-                    Text(stringResource(R.string.settings_cloud_model), fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
-                    
-                    val cloudModels = listOf(
-                        "gemini-flash-latest" to "Gemini Flash (Latest)",
-                        "gemini-flash-lite-latest" to "Gemini Flash-Lite (Latest)"
-                    )
-
-                    cloudModels.forEach { (id, label) ->
-                        SettingRadio(
-                            title = label,
-                            selected = settings.selectedCloudModel == id,
-                            onClick = { onUpdateSelectedCloudModel(id) }
+                    if (settings.apiKey.isBlank()) {
+                        Text(
+                            text = stringResource(R.string.google_models_key_required),
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 4.dp)
                         )
+                    } else if (googleModelsLoading) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            CircularProgressIndicator(color = Gold, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = stringResource(R.string.google_models_loading),
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    } else if (googleModelsError != null) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.google_models_error),
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.error,
+                                textAlign = TextAlign.Center
+                            )
+                            Button(
+                                onClick = onRetryGoogleModels,
+                                colors = ButtonDefaults.buttonColors(containerColor = Gold, contentColor = Color.Black),
+                                shape = RoundedCornerShape(8.dp),
+                                modifier = Modifier.height(32.dp),
+                                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                            ) {
+                                Text(stringResource(R.string.btn_retry), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    } else if (googleModels.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.google_models_empty),
+                            fontSize = 12.sp,
+                            color = Color.Gray,
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
+                    } else {
+                        // Model Family Selection
+                        Text(stringResource(R.string.settings_cloud_model_family), fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable { 
+                                    selectedFamily = "Gemini"
+                                    val geminiModels = googleModels.filter { it.first.lowercase().contains("gemini") }
+                                    if (geminiModels.isNotEmpty() && geminiModels.none { it.first == settings.selectedCloudModel }) {
+                                        val defaultModelName = geminiModels.find { it.first.contains("2.5-flash") }?.first
+                                            ?: geminiModels.find { it.first.contains("1.5-flash") }?.first
+                                            ?: geminiModels.first().first
+                                        onUpdateSelectedCloudModel(defaultModelName)
+                                    }
+                                }
+                            ) {
+                                RadioButton(
+                                    selected = selectedFamily == "Gemini",
+                                    onClick = { 
+                                        selectedFamily = "Gemini"
+                                        val geminiModels = googleModels.filter { it.first.lowercase().contains("gemini") }
+                                        if (geminiModels.isNotEmpty() && geminiModels.none { it.first == settings.selectedCloudModel }) {
+                                            val defaultModelName = geminiModels.find { it.first.contains("2.5-flash") }?.first
+                                                ?: geminiModels.find { it.first.contains("1.5-flash") }?.first
+                                                ?: geminiModels.first().first
+                                            onUpdateSelectedCloudModel(defaultModelName)
+                                        }
+                                    },
+                                    colors = RadioButtonDefaults.colors(selectedColor = Gold)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Gemini", fontSize = 14.sp)
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.clickable { 
+                                    selectedFamily = "Gemma"
+                                    val gemmaModels = googleModels.filter { it.first.lowercase().contains("gemma") }
+                                    if (gemmaModels.isNotEmpty() && gemmaModels.none { it.first == settings.selectedCloudModel }) {
+                                        onUpdateSelectedCloudModel(gemmaModels.first().first)
+                                    }
+                                }
+                            ) {
+                                RadioButton(
+                                    selected = selectedFamily == "Gemma",
+                                    onClick = { 
+                                        selectedFamily = "Gemma"
+                                        val gemmaModels = googleModels.filter { it.first.lowercase().contains("gemma") }
+                                        if (gemmaModels.isNotEmpty() && gemmaModels.none { it.first == settings.selectedCloudModel }) {
+                                            onUpdateSelectedCloudModel(gemmaModels.first().first)
+                                        }
+                                    },
+                                    colors = RadioButtonDefaults.colors(selectedColor = Gold)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text("Gemma", fontSize = 14.sp)
+                            }
+                        }
+
+                        Spacer(Modifier.height(8.dp))
+
+                        // Filtered Model Selection
+                        Text(stringResource(R.string.settings_cloud_model), fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(start = 4.dp))
+                        val filteredModels = googleModels.filter { (id, _) ->
+                            if (selectedFamily == "Gemini") id.lowercase().contains("gemini")
+                            else id.lowercase().contains("gemma")
+                        }
+                        if (filteredModels.isEmpty()) {
+                            Text(
+                                text = stringResource(R.string.google_models_empty),
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        } else {
+                            filteredModels.forEach { (id, label) ->
+                                SettingRadio(
+                                    title = label,
+                                    selected = settings.selectedCloudModel == id,
+                                    onClick = { onUpdateSelectedCloudModel(id) }
+                                )
+                            }
+                        }
                     }
                 }
             } else if (currentEngine == EngineType.LITERT) {

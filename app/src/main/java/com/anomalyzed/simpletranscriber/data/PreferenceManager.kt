@@ -11,6 +11,8 @@ private val Context.dataStore by preferencesDataStore(name = "settings")
 class PreferenceManager(private val context: Context) {
 
     companion object {
+        // Keep "gemini_api_key" key name for backward compatibility with existing user data,
+        // even though it represents the Google API Key.
         val API_KEY = stringPreferencesKey("gemini_api_key")
         val IS_PREMIUM = booleanPreferencesKey("is_premium")
         val LANGUAGE = stringPreferencesKey("language")

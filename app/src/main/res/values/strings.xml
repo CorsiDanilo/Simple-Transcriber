@@ -1,22 +1,22 @@
 <resources>
     <string name="app_name">Transcriber</string>
     <string name="title_transcribing">Transcribing...</string>
-    <string name="info_gemini">Powered by Gemini AI</string>
+    <string name="info_gemini">Powered by Google AI</string>
     <string name="btn_copy">Copy to clipboard</string>
     <string name="btn_close">Close</string>
     <string name="btn_start">Start Transcription</string>
     <string name="error_title">An error occurred</string>
-    <string name="label_api_key">Gemini API Key</string>
+    <string name="label_api_key">Google API Key</string>
     <string name="placeholder_api_key">Paste your API key here...</string>
     <string name="label_language">Target Language</string>
-    <string name="msg_api_key_required">Please enter your Gemini API Key. You can get one at aistudio.google.com</string>
+    <string name="msg_api_key_required">Please enter your Google API Key. You can get one at aistudio.google.com</string>
     <string name="toast_copied">Copied to clipboard!</string>
     <string name="msg_success_copy">Transcription copied!</string>
 
     <!-- Settings strings -->
     <string name="settings_title">Settings</string>
     <string name="settings_engine_section">Transcriber Engine</string>
-    <string name="settings_engine_cloud">Cloud (Gemini API)</string>
+    <string name="settings_engine_cloud">Cloud (Google)</string>
     <string name="settings_engine_cloud_sub">Requires API Key &amp; Internet</string>
     <string name="settings_engine_aicore">AICore (On-Device)</string>
     <string name="settings_engine_aicore_sub_ready">System-managed, no setup needed</string>
@@ -24,7 +24,8 @@
     <string name="settings_engine_local">Local Model</string>
     <string name="settings_engine_local_sub_prefix">Selected: %1$s</string>
     <string name="settings_engine_local_sub_default">Gemma and Whisper downloads</string>
-    <string name="settings_cloud_section">Cloud Settings (Gemini)</string>
+    <string name="settings_cloud_section">Cloud Settings (Google)</string>
+    <string name="settings_cloud_model_family">Model Family</string>
     <string name="settings_cloud_model">Cloud Model</string>
     <string name="settings_local_section">Local Model Settings</string>
     <string name="settings_local_manage">Manage Models</string>
@@ -97,7 +98,7 @@
     <string name="engine_cloud">Cloud</string>
     <string name="engine_aicore">AICore</string>
     <string name="engine_local_fallback">Local</string>
-    <string name="engine_cloud_label">Cloud (Gemini API)</string>
+    <string name="engine_cloud_label">Cloud (Google)</string>
     <string name="engine_aicore_label">AICore (On-Device)</string>
     <string name="engine_local_label">Local Model</string>
     <string name="status_refining">Refining text...</string>
@@ -119,4 +120,11 @@
     <string name="model_missing_warning">No local models downloaded. Go to Settings → Manage Models.</string>
     <string name="aicore_active_info">Using on-device AICore engine</string>
     <string name="btn_back_to_setup">Back to Setup / Change Engine</string>
+
+    <!-- Dynamic Google Models strings -->
+    <string name="google_models_loading">Loading Google models...</string>
+    <string name="google_models_error">Failed to load Google models. Check your API key or connection.</string>
+    <string name="google_models_empty">No available models found for this API Key.</string>
+    <string name="google_models_key_required">Enter a valid Google API Key to load available models.</string>
+    <string name="btn_retry">Retry</string>
 </resources>

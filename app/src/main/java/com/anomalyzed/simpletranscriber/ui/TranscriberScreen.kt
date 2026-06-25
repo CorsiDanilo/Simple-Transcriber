@@ -41,14 +41,15 @@ fun TranscriberScreen(
     onEngineChange: (String) -> Unit,
     currentApiKey: String,
     currentLanguage: String,
-    currentCloudModel: String = "gemini-flash-latest",
+    currentCloudModel: String = "gemini-2.5-flash",
     currentEngine: String = "cloud",
     selectedModelName: String = "",
     isModelDownloaded: Boolean = false,
     isAICoreAvailable: Boolean = false,
     downloadedModels: List<com.anomalyzed.simpletranscriber.data.ModelInfo> = emptyList(),
     currentLocalModelId: String = "",
-    onUpdateLocalModel: (String) -> Unit = {}
+    onUpdateLocalModel: (String) -> Unit = {},
+    googleModels: List<Pair<String, String>> = emptyList()
 ) {
     val engineType = EngineType.fromKey(currentEngine)
 
@@ -105,7 +106,8 @@ fun TranscriberScreen(
                         onLanguageChange = onUpdateLanguage,
                         onCloudModelChange = onUpdateCloudModel,
                         onLocalModelChange = onUpdateLocalModel,
-                        onStart = onStartTranscription
+                        onStart = onStartTranscription,
+                        googleModels = googleModels
                     )
                     is TranscriberUiState.Loading -> LoadingContent(state.progressMessage)
                     is TranscriberUiState.Streaming -> StreamingContent(state.partialText, state.isRefining, onCopyToClipboard)
@@ -229,11 +231,15 @@ fun SetupContent(
     onLanguageChange: (String) -> Unit,
     onCloudModelChange: (String) -> Unit,
     onLocalModelChange: (String) -> Unit,
-    onStart: () -> Unit
+    onStart: () -> Unit,
+    googleModels: List<Pair<String, String>> = emptyList()
 ) {
     var langExpanded by remember { mutableStateOf(false) }
     var modelExpanded by remember { mutableStateOf(false) }
     var isApiKeyVisible by remember { mutableStateOf(false) }
+    var selectedFamily by remember(selectedCloudModel) {
+        mutableStateOf(if (selectedCloudModel.lowercase().contains("gemma")) "Gemma" else "Gemini")
+    }
     // Una lista espandibile con le principali lingue. Per "tutte" usiamo un subset comune.
     val languages = listOf("Italian", "English", "Spanish", "French", "German", "Portuguese", "Russian", "Chinese", "Japanese", "Arabic")
 
@@ -268,17 +274,98 @@ fun SetupContent(
                 singleLine = true
             )
 
+            // Model Family Selection
+            Text(stringResource(R.string.settings_cloud_model_family), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { 
+                        selectedFamily = "Gemini"
+                        val geminiModels = (if (googleModels.isNotEmpty()) googleModels else listOf(
+                            "gemini-2.5-flash" to "Gemini 2.5 Flash",
+                            "gemini-1.5-flash" to "Gemini 1.5 Flash",
+                            "gemini-1.5-flash-lite" to "Gemini 1.5 Flash-Lite"
+                        )).filter { it.first.lowercase().contains("gemini") }
+                        if (geminiModels.isNotEmpty() && geminiModels.none { it.first == selectedCloudModel }) {
+                            val defaultModelName = geminiModels.find { it.first.contains("2.5-flash") }?.first
+                                ?: geminiModels.find { it.first.contains("1.5-flash") }?.first
+                                ?: geminiModels.first().first
+                            onCloudModelChange(defaultModelName)
+                        }
+                    }
+                ) {
+                    RadioButton(
+                        selected = selectedFamily == "Gemini",
+                        onClick = { 
+                            selectedFamily = "Gemini"
+                            val geminiModels = (if (googleModels.isNotEmpty()) googleModels else listOf(
+                                "gemini-2.5-flash" to "Gemini 2.5 Flash",
+                                "gemini-1.5-flash" to "Gemini 1.5 Flash",
+                                "gemini-1.5-flash-lite" to "Gemini 1.5 Flash-Lite"
+                            )).filter { it.first.lowercase().contains("gemini") }
+                            if (geminiModels.isNotEmpty() && geminiModels.none { it.first == selectedCloudModel }) {
+                                val defaultModelName = geminiModels.find { it.first.contains("2.5-flash") }?.first
+                                    ?: geminiModels.find { it.first.contains("1.5-flash") }?.first
+                                    ?: geminiModels.first().first
+                                onCloudModelChange(defaultModelName)
+                            }
+                        },
+                        colors = RadioButtonDefaults.colors(selectedColor = Gold)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Gemini", style = MaterialTheme.typography.bodyMedium)
+                }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { 
+                        selectedFamily = "Gemma"
+                        val gemmaModels = (if (googleModels.isNotEmpty()) googleModels else emptyList<Pair<String, String>>())
+                            .filter { it.first.lowercase().contains("gemma") }
+                        if (gemmaModels.isNotEmpty() && gemmaModels.none { it.first == selectedCloudModel }) {
+                            onCloudModelChange(gemmaModels.first().first)
+                        }
+                    }
+                ) {
+                    RadioButton(
+                        selected = selectedFamily == "Gemma",
+                        onClick = { 
+                            selectedFamily = "Gemma"
+                            val gemmaModels = (if (googleModels.isNotEmpty()) googleModels else emptyList<Pair<String, String>>())
+                                .filter { it.first.lowercase().contains("gemma") }
+                            if (gemmaModels.isNotEmpty() && gemmaModels.none { it.first == selectedCloudModel }) {
+                                onCloudModelChange(gemmaModels.first().first)
+                            }
+                        },
+                        colors = RadioButtonDefaults.colors(selectedColor = Gold)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Gemma", style = MaterialTheme.typography.bodyMedium)
+                }
+            }
+
             // Cloud Model Dropdown
             Box(modifier = Modifier.fillMaxWidth()) {
                 ExposedDropdownMenuBox(
                     expanded = modelExpanded,
                     onExpandedChange = { modelExpanded = !modelExpanded }
                 ) {
-                    val cloudModels = listOf(
-                        "gemini-flash-latest" to "Gemini Flash (Latest)",
-                        "gemini-flash-lite-latest" to "Gemini Flash-Lite (Latest)"
-                    )
-                    val currentModelLabel = cloudModels.find { it.first == selectedCloudModel }?.second ?: selectedCloudModel
+                    val allCloudModels = if (googleModels.isNotEmpty()) {
+                        googleModels
+                    } else {
+                        listOf(
+                            "gemini-2.5-flash" to "Gemini 2.5 Flash",
+                            "gemini-1.5-flash" to "Gemini 1.5 Flash",
+                            "gemini-1.5-flash-lite" to "Gemini 1.5 Flash-Lite"
+                        )
+                    }
+                    val cloudModels = allCloudModels.filter { (id, _) ->
+                        if (selectedFamily == "Gemini") id.lowercase().contains("gemini")
+                        else id.lowercase().contains("gemma")
+                    }
+                    val currentModelLabel = allCloudModels.find { it.first == selectedCloudModel }?.second ?: selectedCloudModel
 
                     OutlinedTextField(
                         value = currentModelLabel,

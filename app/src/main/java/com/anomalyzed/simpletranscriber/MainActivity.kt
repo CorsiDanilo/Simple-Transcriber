@@ -98,6 +98,9 @@ class MainActivity : AppCompatActivity() {
             val modelsWithStatus by mainViewModel.modelsWithStatus.collectAsState()
             val catalogLoading by mainViewModel.catalogLoading.collectAsState()
             val catalogError by mainViewModel.catalogError.collectAsState()
+            val googleModels by mainViewModel.googleModels.collectAsState()
+            val googleModelsLoading by mainViewModel.googleModelsLoading.collectAsState()
+            val googleModelsError by mainViewModel.googleModelsError.collectAsState()
 
             var updateInfo by remember { mutableStateOf<UpdateInfo?>(null) }
             var changelogInfo by remember { mutableStateOf<UpdateInfo?>(null) }
@@ -206,7 +209,8 @@ class MainActivity : AppCompatActivity() {
                             mainViewModel.updateTranscriptionEngine(it)
                             transcriberViewModel.clearError()
                         },
-                        onStartTranscription = { startTranscriptionWithNotificationPermission() }
+                        onStartTranscription = { startTranscriptionWithNotificationPermission() },
+                        googleModels = googleModels
                     )
                 } else {
                     val navController = rememberNavController()
@@ -232,12 +236,16 @@ class MainActivity : AppCompatActivity() {
                                      settings = settings,
                                      isAICoreAvailable = mainViewModel.isAICoreAvailable,
                                      selectedModelName = selectedModelName,
+                                     googleModels = googleModels,
+                                     googleModelsLoading = googleModelsLoading,
+                                     googleModelsError = googleModelsError,
+                                     onRetryGoogleModels = { mainViewModel.refreshGoogleModels() },
                                      onNavigateBack = { navController.popBackStack() },
                                      onUpdateLanguage = { mainViewModel.updateLanguage(it) },
                                      onUpdateTranscriptionEngine = { mainViewModel.updateTranscriptionEngine(it) },
-                                    onUpdateApiKey = { mainViewModel.updateApiKey(it) },
-                                    onUpdateSelectedCloudModel = { mainViewModel.updateSelectedCloudModel(it) },
-                                    onNavigateToModelManager = { navController.navigate("model_manager") },
+                                     onUpdateApiKey = { mainViewModel.updateApiKey(it) },
+                                     onUpdateSelectedCloudModel = { mainViewModel.updateSelectedCloudModel(it) },
+                                     onNavigateToModelManager = { navController.navigate("model_manager") },
                                     onCheckForUpdates = {
                                         scope.launch {
                                             try {

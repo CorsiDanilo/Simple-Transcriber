@@ -4,12 +4,12 @@ import com.google.ai.client.generativeai.GenerativeModel
 import com.google.ai.client.generativeai.type.content
 
 /**
- * Engine di trascrizione che usa l'API cloud di Gemini.
+ * Engine di trascrizione che usa l'API cloud di Google (Gemini).
  * Refactor della logica originariamente inline nel TranscriberViewModel.
  */
 class CloudEngine(
     private val apiKey: String,
-    private val modelName: String = "gemini-flash-latest"
+    private val modelName: String = "gemini-2.5-flash"
 ) : TranscriptionEngine {
 
     override suspend fun transcribe(
@@ -50,7 +50,7 @@ class CloudEngine(
             if (text.isNotBlank()) {
                 TranscriptionResult.Success(text)
             } else {
-                TranscriptionResult.Error("Gemini returned no text. Check audio volume or content.")
+                TranscriptionResult.Error("Google API returned no text. Check audio volume or content.")
             }
         } catch (e: Exception) {
             TranscriptionResult.Error(e.localizedMessage ?: "Cloud transcription failed.")
