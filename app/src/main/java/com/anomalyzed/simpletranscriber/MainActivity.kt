@@ -191,9 +191,6 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     val dismissAction: () -> Unit = {
-                        if (transcriberState is TranscriberUiState.Loading || transcriberState is TranscriberUiState.Streaming) {
-                            transcriberViewModel.refreshNotification(this@MainActivity, transcriberState)
-                        }
                         finish()
                     }
 

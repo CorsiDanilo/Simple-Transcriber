@@ -2,13 +2,17 @@ package com.anomalyzed.simpletranscriber.data
 
 import android.content.Context
 import androidx.room.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "transcriptions")
 data class TranscriptionItem(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val timestamp: Long,
-    val text: String
+    val text: String,
+    val engineMode: String? = null,
+    val modelName: String? = null
 )
 
 @Dao
@@ -29,11 +33,18 @@ interface TranscriptionDao {
     suspend fun deleteByIds(ids: Set<Int>)
 }
 
-@Database(entities = [TranscriptionItem::class], version = 1)
+@Database(entities = [TranscriptionItem::class], version = 2)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transcriptionDao(): TranscriptionDao
 
     companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transcriptions ADD COLUMN engineMode TEXT")
+                db.execSQL("ALTER TABLE transcriptions ADD COLUMN modelName TEXT")
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -41,7 +52,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "watranscriber_db"
-                ).build()
+                )
+                .addMigrations(MIGRATION_1_2)
+                .build()
                 INSTANCE = instance
                 instance
             }

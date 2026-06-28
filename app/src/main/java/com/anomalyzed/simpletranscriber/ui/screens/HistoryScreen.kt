@@ -325,6 +325,14 @@ fun HistoryItemCard(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
+                if (item.engineMode != null && item.modelName != null) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Mode: ${item.engineMode} | Model: ${item.modelName}",
+                        color = Color.Gray,
+                        fontSize = 11.sp
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = item.text,

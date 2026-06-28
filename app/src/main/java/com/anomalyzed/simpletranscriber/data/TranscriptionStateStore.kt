@@ -8,7 +8,11 @@ import android.content.Context
  * are transient and not relevant after process death.
  */
 sealed class FinalState {
-    data class Success(val text: String) : FinalState()
+    data class Success(
+        val text: String,
+        val engineMode: String? = null,
+        val modelName: String? = null
+    ) : FinalState()
     data class Error(val message: String) : FinalState()
 }
 
@@ -42,9 +46,14 @@ class TranscriptionStateStore(context: Context) {
             is FinalState.Success -> state.text
             is FinalState.Error   -> state.message
         }
+        val engineMode = (state as? FinalState.Success)?.engineMode
+        val modelName = (state as? FinalState.Success)?.modelName
+
         prefs.edit()
             .putString(keyType(id), type)
             .putString(keyText(id), text)
+            .putString(keyEngineMode(id), engineMode)
+            .putString(keyModelName(id), modelName)
             .putLong(keyTs(id), System.currentTimeMillis())
             .apply()
     }
@@ -57,6 +66,8 @@ class TranscriptionStateStore(context: Context) {
     fun consume(id: Long): FinalState? {
         val type = prefs.getString(keyType(id), null) ?: return null
         val text = prefs.getString(keyText(id), null) ?: run { delete(id); return null }
+        val engineMode = prefs.getString(keyEngineMode(id), null)
+        val modelName = prefs.getString(keyModelName(id), null)
         val ts   = prefs.getLong(keyTs(id), 0L)
 
         delete(id)
@@ -64,7 +75,7 @@ class TranscriptionStateStore(context: Context) {
         if (System.currentTimeMillis() - ts > TTL_MS) return null
 
         return when (type) {
-            TYPE_SUCCESS -> FinalState.Success(text)
+            TYPE_SUCCESS -> FinalState.Success(text, engineMode, modelName)
             TYPE_ERROR   -> FinalState.Error(text)
             else         -> null
         }
@@ -74,12 +85,16 @@ class TranscriptionStateStore(context: Context) {
         prefs.edit()
             .remove(keyType(id))
             .remove(keyText(id))
+            .remove(keyEngineMode(id))
+            .remove(keyModelName(id))
             .remove(keyTs(id))
             .apply()
     }
 
     private fun keyType(id: Long) = "result_${id}_type"
     private fun keyText(id: Long) = "result_${id}_text"
+    private fun keyEngineMode(id: Long) = "result_${id}_engine"
+    private fun keyModelName(id: Long) = "result_${id}_model"
     private fun keyTs(id: Long)   = "result_${id}_ts"
 
     companion object {

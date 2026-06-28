@@ -34,7 +34,11 @@ sealed class TranscriberUiState {
     data class Streaming(val partialText: String, val isRefining: Boolean = false) : TranscriberUiState()
 
     /** Trascrizione completata con successo */
-    data class Success(val text: String) : TranscriberUiState()
+    data class Success(
+        val text: String,
+        val engineMode: String? = null,
+        val modelName: String? = null
+    ) : TranscriberUiState()
 
     /** Errore durante la trascrizione */
     data class Error(val message: String) : TranscriberUiState()
@@ -87,28 +91,11 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             viewModelScope.launch(Dispatchers.IO) {
                 val stored = TranscriptionStateStore(getApplication()).consume(id)
                 when (stored) {
-                    is FinalState.Success -> TranscriptionManager.setState(TranscriberUiState.Success(stored.text))
+                    is FinalState.Success -> TranscriptionManager.setState(TranscriberUiState.Success(stored.text, stored.engineMode, stored.modelName))
                     is FinalState.Error   -> TranscriptionManager.setState(TranscriberUiState.Error(stored.message))
                     null -> { /* no persisted state — Setup is the correct initial state */ }
                 }
             }
-        }
-    }
-
-    fun refreshNotification(context: Context, state: TranscriberUiState) {
-        val displayText = buildNotificationText(state) ?: return
-        val transcriptionId = activeTranscriptionId ?: TranscriptionManager.currentTaskId() ?: return
-        val intent = Intent(context, TranscriptionService::class.java).apply {
-            action = TranscriptionService.ACTION_REFRESH_NOTIFICATION
-            putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, transcriptionId)
-            putExtra(TranscriptionService.EXTRA_NOTIFICATION_TEXT, displayText)
-            putExtra(TranscriptionService.EXTRA_NOTIFICATION_TITLE, "Transcriber")
-        }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(intent)
-        } else {
-            context.startService(intent)
         }
     }
 
@@ -119,21 +106,6 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, transcriptionId)
         }
         context.startService(intent)
-    }
-
-    private fun buildNotificationText(state: TranscriberUiState): String? {
-        return when (state) {
-            is TranscriberUiState.Loading -> state.progressMessage.ifBlank { "Transcribing..." }
-            is TranscriberUiState.Streaming -> {
-                val preview = buildPreview(state.partialText)
-                if (state.isRefining) {
-                    if (preview.isNotEmpty()) "Refining: $preview" else "Refining..."
-                } else {
-                    if (preview.isNotEmpty()) "Transcribing: $preview" else "Transcribing..."
-                }
-            }
-            else -> null
-        }
     }
 
     private fun buildPreview(text: String, maxLength: Int = 40): String {

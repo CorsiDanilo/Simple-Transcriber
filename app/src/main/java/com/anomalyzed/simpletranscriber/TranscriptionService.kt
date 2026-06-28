@@ -112,28 +112,6 @@ class TranscriptionService : Service() {
                     stopSelf()
                 }
             }
-            ACTION_REFRESH_NOTIFICATION -> {
-                val transcriptionId = intent.getLongExtra(EXTRA_TRANSCRIPTION_ID, MainActivity.NO_TRANSCRIPTION_ID)
-                if (transcriptionId == MainActivity.NO_TRANSCRIPTION_ID) return START_NOT_STICKY
-                val textExtra = intent.getStringExtra(EXTRA_NOTIFICATION_TEXT)
-                val titleExtra = intent.getStringExtra(EXTRA_NOTIFICATION_TITLE)
-                val displayText = textExtra?.ifBlank { getString(R.string.notif_transcribing) }
-                if (displayText != null) {
-                    startForeground(
-                        notificationId(transcriptionId),
-                        createNotification(
-                            title = titleExtra ?: getString(R.string.app_name),
-                            text = displayText,
-                            ongoing = true,
-                            autoCancel = false,
-                            pendingIntent = createDefaultPendingIntent(transcriptionId),
-                            transcriptionId = transcriptionId
-                        )
-                    )
-                } else {
-                    refreshNotificationFromState(transcriptionId)
-                }
-            }
         }
         return START_NOT_STICKY
     }
@@ -145,6 +123,20 @@ class TranscriptionService : Service() {
             try {
                 val settings = prefManager.settingsFlow.first()
                 val engineType = EngineType.fromKey(settings.transcriptionEngine)
+                
+                var engineModeStr = engineType.name
+                var modelNameStr: String? = null
+                
+                if (engineType == EngineType.LITERT) {
+                    val catalogResult = modelRepository.fetchModelCatalog(settings.modelCatalogUrl)
+                    val catalog = catalogResult.getOrDefault(emptyList())
+                    val selectedModel = catalog.find { it.id == settings.selectedModelId }
+                    modelNameStr = selectedModel?.displayName ?: "Local Model"
+                } else if (engineType == EngineType.CLOUD) {
+                    modelNameStr = settings.selectedCloudModel
+                } else if (engineType == EngineType.AICORE) {
+                    modelNameStr = "Gemini Nano"
+                }
 
                 engine = createEngine(engineType, settings.selectedModelId, settings.apiKey, settings.selectedCloudModel)
 
@@ -218,9 +210,16 @@ class TranscriptionService : Service() {
                             }
                         }
                         
-                        db.transcriptionDao().insert(TranscriptionItem(timestamp = System.currentTimeMillis(), text = finalText))
-                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Success(finalText))
-                        TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Success(finalText))
+                        db.transcriptionDao().insert(
+                            TranscriptionItem(
+                                timestamp = System.currentTimeMillis(), 
+                                text = finalText,
+                                engineMode = engineModeStr,
+                                modelName = modelNameStr
+                            )
+                        )
+                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Success(finalText, engineModeStr, modelNameStr))
+                        TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Success(finalText, engineModeStr, modelNameStr))
                         showSuccessNotification(transcriptionId, finalText)
                     }
                     is TranscriptionResult.Error -> {
@@ -271,10 +270,6 @@ class TranscriptionService : Service() {
     }
 
     private fun finishServiceIfIdle(removeForegroundNotification: Boolean = false) {
-        if (activeTranscriptionJobs.isNotEmpty()) {
-            promoteForegroundNotification()
-            return
-        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             stopForeground(
                 if (removeForegroundNotification) {
@@ -286,6 +281,11 @@ class TranscriptionService : Service() {
         } else {
             @Suppress("DEPRECATION")
             stopForeground(removeForegroundNotification)
+        }
+
+        if (activeTranscriptionJobs.isNotEmpty()) {
+            promoteForegroundNotification()
+            return
         }
         stopSelf()
     }

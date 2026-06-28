@@ -111,7 +111,7 @@ fun TranscriberScreen(
                     )
                     is TranscriberUiState.Loading -> LoadingContent(state.progressMessage)
                     is TranscriberUiState.Streaming -> StreamingContent(state.partialText, state.isRefining, onCopyToClipboard)
-                    is TranscriberUiState.Success -> SuccessContent(state.text, onCopyToClipboard)
+                    is TranscriberUiState.Success -> SuccessContent(state.text, state.engineMode, state.modelName, onCopyToClipboard)
                     is TranscriberUiState.Error -> ErrorContent(
                         msg = state.message,
                         onRetry = { onEngineChange(currentEngine) }
@@ -558,8 +558,23 @@ fun LoadingContent(progressMessage: String = "") {
 }
 
 @Composable
-fun SuccessContent(text: String, onCopy: (String) -> Unit) {
+fun SuccessContent(text: String, engineMode: String?, modelName: String?, onCopy: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        if (engineMode != null && modelName != null) {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Mode: $engineMode | Model: $modelName",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
         Box(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
             Text(text, style = MaterialTheme.typography.bodyMedium)
         }
