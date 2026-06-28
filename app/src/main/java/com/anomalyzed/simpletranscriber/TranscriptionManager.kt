@@ -38,8 +38,7 @@ object TranscriptionManager {
         _taskStates.value = _taskStates.value.toMutableMap().apply {
             this[id] = state
         }
-        if (selectedTaskId == null || selectedTaskId == id) {
-            selectedTaskId = id
+        if (selectedTaskId == id) {
             _uiState.value = state
         }
     }

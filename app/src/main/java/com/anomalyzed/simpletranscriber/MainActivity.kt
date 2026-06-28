@@ -78,6 +78,7 @@ class MainActivity : AppCompatActivity() {
     private var showTranscriberDialog by mutableStateOf(false)
     private var startTranscriptionAfterNotificationPermission = false
     private var isActivityVisible = false
+    private var hasBeenVisible = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -95,10 +96,10 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             transcriberViewModel.uiState.collect { state ->
-                // Only finish automatically on Success (notification has the result).
-                // On Error we keep the activity alive so the user can always open the
-                // dialog — either by returning to the app or by tapping the notification.
-                if (!isActivityVisible && state is TranscriberUiState.Success) {
+                // Only finish automatically on Success if the activity has been visible
+                // and then sent to the background. This prevents the Activity from
+                // immediately finishing itself when created via notification tap.
+                if (hasBeenVisible && !isActivityVisible && state is TranscriberUiState.Success) {
                     finish()
                 }
             }
@@ -460,6 +461,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
         isActivityVisible = true
+        hasBeenVisible = true
     }
 
     override fun onStop() {
