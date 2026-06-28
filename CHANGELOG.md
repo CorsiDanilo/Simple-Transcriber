@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.2] - 2026-06-28
+### Added
+- Transcription state persistence and new history management UI.
+
+### Fixed
+- Resolved edge cases with UI state hijacking and auto-finish in background transcriptions.
+- Resolved an issue where tapping the notification after the share flow was unresponsive.
+- Fixed the in-app updater not finding new releases due to a repository rename (`simple-transcription-app` to `Simple-Transcriber`).
+
 ## [1.2.1] - 2026-06-25
 ### Fixed
 - Background transcription dialog no longer pops up unexpectedly when the app is in the background. A race-condition between the transcription completing and `onStop()` being called could leave the activity alive in a terminal state; both the `lifecycleScope` collector and a new `onStop()` guard now ensure the activity is finished silently on success.

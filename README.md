@@ -61,7 +61,7 @@ graph TD
 1. Clone the repository along with its submodules:
 
    ```bash
-   git clone --recursive https://github.com/CorsiDanilo/simple-transcription-app
+   git clone --recursive https://github.com/CorsiDanilo/Simple-Transcriber
    ```
 
    *Note: If you have already cloned the repository without the `--recursive` flag, you can initialize and download the submodules by running:*

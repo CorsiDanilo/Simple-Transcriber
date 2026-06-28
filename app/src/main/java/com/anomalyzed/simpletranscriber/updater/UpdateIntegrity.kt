@@ -12,7 +12,7 @@ data class ReleaseAssetMetadata(
 
 object UpdateIntegrity {
     private const val TRUSTED_RELEASE_DOWNLOAD_PREFIX =
-        "https://github.com/CorsiDanilo/simple-transcription-app/releases/download/"
+        "https://github.com/CorsiDanilo/Simple-Transcriber/releases/download/"
     private val SHA256_VALUE = Regex("^(?:sha256:)?([a-fA-F0-9]{64})$")
     private val SHA256_IN_TEXT = Regex("(?:sha256:)?([a-fA-F0-9]{64})")
 

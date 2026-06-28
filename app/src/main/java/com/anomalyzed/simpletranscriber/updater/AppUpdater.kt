@@ -13,7 +13,7 @@ import java.net.URL
 class AppUpdater {
 
     companion object {
-        private const val GITHUB_API_URL = "https://api.github.com/repos/CorsiDanilo/simple-transcription-app/releases/latest"
+        private const val GITHUB_API_URL = "https://api.github.com/repos/CorsiDanilo/Simple-Transcriber/releases/latest"
         private const val TAG = "AppUpdater"
     }
 

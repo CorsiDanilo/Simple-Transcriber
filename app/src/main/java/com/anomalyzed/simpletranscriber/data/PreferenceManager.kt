@@ -28,7 +28,7 @@ class PreferenceManager(private val context: Context) {
         val MODEL_CATALOG_URL = stringPreferencesKey("model_catalog_url")
         
         const val DEFAULT_CATALOG_URL =
-            "https://raw.githubusercontent.com/CorsiDanilo/simple-transcription-app/main/models.json"
+            "https://raw.githubusercontent.com/CorsiDanilo/Simple-Transcriber/main/models.json"
     }
 
     val settingsFlow: Flow<UserSettings> = context.dataStore.data.map { prefs ->
