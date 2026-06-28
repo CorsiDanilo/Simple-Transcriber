@@ -1,20 +1,19 @@
 package com.anomalyzed.simpletranscriber
 
 import android.app.Application
-import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.anomalyzed.simpletranscriber.data.FinalState
 import com.anomalyzed.simpletranscriber.data.ModelRepository
 import com.anomalyzed.simpletranscriber.data.PreferenceManager
+import com.anomalyzed.simpletranscriber.data.TranscriptionStateStore
 import com.anomalyzed.simpletranscriber.engine.*
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -63,14 +62,14 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
         val transcriptionId = System.currentTimeMillis() * 1_000 + (System.nanoTime() % 1_000)
         activeTranscriptionId = transcriptionId
         TranscriptionManager.setActiveTask(transcriptionId)
-        
+
         val intent = Intent(context, TranscriptionService::class.java).apply {
             action = TranscriptionService.ACTION_START
             putExtra(TranscriptionService.EXTRA_AUDIO_URI, uri.toString())
             putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, transcriptionId)
         }
-        
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
         } else {
             context.startService(intent)
@@ -80,6 +79,20 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
     fun selectTranscription(id: Long) {
         activeTranscriptionId = id
         TranscriptionManager.setActiveTask(id)
+
+        // If the process was killed after the Service finished and before the user tapped
+        // the notification, _taskStates is empty and setActiveTask() resolves to Setup.
+        // Recover the persisted final state so the dialog shows the correct result.
+        if (TranscriptionManager.uiState.value is TranscriberUiState.Setup) {
+            viewModelScope.launch(Dispatchers.IO) {
+                val stored = TranscriptionStateStore(getApplication()).consume(id)
+                when (stored) {
+                    is FinalState.Success -> TranscriptionManager.setState(TranscriberUiState.Success(stored.text))
+                    is FinalState.Error   -> TranscriptionManager.setState(TranscriberUiState.Error(stored.message))
+                    null -> { /* no persisted state — Setup is the correct initial state */ }
+                }
+            }
+        }
     }
 
     fun refreshNotification(context: Context, state: TranscriberUiState) {

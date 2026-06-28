@@ -15,10 +15,12 @@ import android.os.IBinder
 import android.widget.Toast
 import androidx.core.app.NotificationCompat
 import com.anomalyzed.simpletranscriber.data.AppDatabase
+import com.anomalyzed.simpletranscriber.data.FinalState
 import com.anomalyzed.simpletranscriber.data.ModelBackend
 import com.anomalyzed.simpletranscriber.data.ModelRepository
 import com.anomalyzed.simpletranscriber.data.PreferenceManager
 import com.anomalyzed.simpletranscriber.data.TranscriptionItem
+import com.anomalyzed.simpletranscriber.data.TranscriptionStateStore
 import com.anomalyzed.simpletranscriber.engine.AICoreEngine
 import com.anomalyzed.simpletranscriber.engine.CloudEngine
 import com.anomalyzed.simpletranscriber.engine.EngineType
@@ -218,11 +220,13 @@ class TranscriptionService : Service() {
                         
                         db.transcriptionDao().insert(TranscriptionItem(timestamp = System.currentTimeMillis(), text = finalText))
                         TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Success(finalText))
+                        TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Success(finalText))
                         showSuccessNotification(transcriptionId, finalText)
                     }
                     is TranscriptionResult.Error -> {
                         val humanMsg = ErrorHumanizer.humanize(result.message, this@TranscriptionService)
                         TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(humanMsg))
+                        TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Error(humanMsg))
                         showErrorNotification(transcriptionId, humanMsg)
                     }
                 }
@@ -231,6 +235,7 @@ class TranscriptionService : Service() {
             } catch (e: Exception) {
                 val humanMsg = ErrorHumanizer.humanize(e, this@TranscriptionService)
                 TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(humanMsg))
+                TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Error(humanMsg))
                 showErrorNotification(transcriptionId, humanMsg)
             } finally {
                 engine?.release()
@@ -354,7 +359,10 @@ class TranscriptionService : Service() {
 
     private fun createPendingIntent(transcriptionId: Long, requestCode: Int, flags: Int): PendingIntent {
         val intent = Intent(this, MainActivity::class.java).apply {
-            this.flags = flags
+            // FLAG_ACTIVITY_NEW_TASK ensures the Activity is started in its own task even
+            // when the process is relaunched from scratch via the notification. Without it,
+            // Android may fail to start the Activity when there is no existing foreground task.
+            this.flags = flags or Intent.FLAG_ACTIVITY_NEW_TASK
             putExtra(MainActivity.EXTRA_SHOW_TRANSCRIBER_DIALOG, true)
             putExtra(MainActivity.EXTRA_TRANSCRIPTION_ID, transcriptionId)
         }

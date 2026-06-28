@@ -42,7 +42,7 @@
             android:theme="@style/Theme.Transcriber"
             android:excludeFromRecents="false"
             android:taskAffinity=""
-            android:launchMode="singleTask">
+            android:launchMode="singleTop">
 
             <!--
                 Intent filter per catturare file audio condivisi.
