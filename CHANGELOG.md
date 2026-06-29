@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.2.3] - 2026-06-29
+### Added
+- **App Version Display**: Added the current app version to the Settings screen under the new "About" section.
+
 ## [1.2.2] - 2026-06-28
 ### Added
 - Transcription state persistence and new history management UI.

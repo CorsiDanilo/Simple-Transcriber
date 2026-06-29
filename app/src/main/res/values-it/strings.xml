@@ -46,6 +46,8 @@
     <string name="settings_language_english">"English (Inglese)"</string>
     <string name="settings_language_italian">"Italiano"</string>
     <string name="btn_cancel">"Annulla"</string>
+    <string name="settings_about_section">Informazioni</string>
+    <string name="settings_version">Versione</string>
 
     <!-- History strings -->
     <string name="history_title">"Cronologia"</string>

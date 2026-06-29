@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import com.anomalyzed.simpletranscriber.R
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import com.anomalyzed.simpletranscriber.BuildConfig
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -373,6 +374,15 @@ fun SettingsScreen(
                     title = stringResource(R.string.settings_updates_changelog),
                     subtitle = stringResource(R.string.settings_updates_changelog_sub),
                     onClick = onViewChangelog
+                )
+            }
+
+            // ── About ──
+            SettingSection(stringResource(R.string.settings_about_section)) {
+                SettingItem(
+                    icon = Icons.Default.Info,
+                    title = stringResource(R.string.settings_version),
+                    subtitle = BuildConfig.VERSION_NAME
                 )
             }
         }
