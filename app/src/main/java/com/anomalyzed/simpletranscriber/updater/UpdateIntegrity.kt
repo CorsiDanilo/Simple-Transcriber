@@ -1,5 +1,6 @@
 package com.anomalyzed.simpletranscriber.updater
 
+import com.anomalyzed.simpletranscriber.BuildConfig
 import java.io.File
 import java.security.MessageDigest
 import java.util.Locale
@@ -16,9 +17,15 @@ object UpdateIntegrity {
     private val SHA256_VALUE = Regex("^(?:sha256:)?([a-fA-F0-9]{64})$")
     private val SHA256_IN_TEXT = Regex("(?:sha256:)?([a-fA-F0-9]{64})")
 
-    fun selectApkAsset(assets: List<ReleaseAssetMetadata>): ReleaseAssetMetadata? =
+    fun selectApkAsset(assets: List<ReleaseAssetMetadata>, isDebug: Boolean = BuildConfig.DEBUG): ReleaseAssetMetadata? =
         assets.firstOrNull { asset ->
+            val nameMatchesBuildType = if (isDebug) {
+                asset.name.contains("debug", ignoreCase = true)
+            } else {
+                !asset.name.contains("debug", ignoreCase = true)
+            }
             asset.name.endsWith(".apk", ignoreCase = true) &&
+                nameMatchesBuildType &&
                 isTrustedReleaseDownloadUrl(asset.browserDownloadUrl)
         }
 

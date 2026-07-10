@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.4.0] - 2026-07-10
+### Fixed
+- Fixed the in-app updater downloading the debug build variant instead of matching the user's installed build variant (debug or signed/release).
+
 ## [1.3.0] - 2026-07-10
 ### Fixed
 - **Duplicate Entries in History**: Resolved a bug where audio transcriptions completed during the share flow (`isShareFlow`) were saved twice in the database, resulting in duplicate history entries (one with engine/model metadata and one without). The redundant manual save in `MainActivity` was removed, leaving the clean, metadata-rich save logic to `TranscriptionService`.

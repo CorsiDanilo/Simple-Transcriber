@@ -24,8 +24,8 @@ android {
         applicationId = "com.anomalyzed.simpletranscriber"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.3.0"
+        versionCode = 12
+        versionName = "1.4.0"
 
         // Espone la chiave API come costante BuildConfig accessibile nel codice Kotlin
         buildConfigField("String", "GEMINI_API_KEY", "\"$geminiApiKey\"")

@@ -26,7 +26,7 @@ class UpdateIntegrityTest {
     fun selectApkAssetRequiresTrustedGithubReleaseUrl() {
         val trusted = ReleaseAssetMetadata(
             name = "transcriber-signed.apk",
-            browserDownloadUrl = "https://github.com/CorsiDanilo/simple-transcription-app/releases/download/v1.2.0/transcriber-signed.apk",
+            browserDownloadUrl = "https://github.com/CorsiDanilo/Simple-Transcriber/releases/download/v1.2.0/transcriber-signed.apk",
             digest = "sha256:${"c".repeat(64)}"
         )
         val untrusted = ReleaseAssetMetadata(
@@ -35,7 +35,25 @@ class UpdateIntegrityTest {
             digest = "sha256:${"d".repeat(64)}"
         )
 
-        assertEquals(trusted, UpdateIntegrity.selectApkAsset(listOf(untrusted, trusted)))
+        assertEquals(trusted, UpdateIntegrity.selectApkAsset(listOf(untrusted, trusted), isDebug = false))
+    }
+
+    @Test
+    fun selectApkAssetSelectsCorrectBuildVariant() {
+        val debugAsset = ReleaseAssetMetadata(
+            name = "transcriber-debug.apk",
+            browserDownloadUrl = "https://github.com/CorsiDanilo/Simple-Transcriber/releases/download/v1.2.0/transcriber-debug.apk",
+            digest = "sha256:${"c".repeat(64)}"
+        )
+        val signedAsset = ReleaseAssetMetadata(
+            name = "transcriber-signed.apk",
+            browserDownloadUrl = "https://github.com/CorsiDanilo/Simple-Transcriber/releases/download/v1.2.0/transcriber-signed.apk",
+            digest = "sha256:${"d".repeat(64)}"
+        )
+
+        val assets = listOf(debugAsset, signedAsset)
+        assertEquals(debugAsset, UpdateIntegrity.selectApkAsset(assets, isDebug = true))
+        assertEquals(signedAsset, UpdateIntegrity.selectApkAsset(assets, isDebug = false))
     }
 
     @Test
@@ -74,7 +92,7 @@ class UpdateIntegrityTest {
     fun checksumAssetCanBeLocatedByApkSpecificSidecarName() {
         val sidecar = ReleaseAssetMetadata(
             name = "transcriber-signed.apk.sha256",
-            browserDownloadUrl = "https://github.com/CorsiDanilo/simple-transcription-app/releases/download/v1.2.0/transcriber-signed.apk.sha256",
+            browserDownloadUrl = "https://github.com/CorsiDanilo/Simple-Transcriber/releases/download/v1.2.0/transcriber-signed.apk.sha256",
             digest = null
         )
 
