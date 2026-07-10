@@ -184,11 +184,6 @@ class MainActivity : AppCompatActivity() {
             TranscriberTheme {
                 if (isShareFlow || showTranscriberDialog) {
                     // In modalita condivisione/notifica mostriamo solo il popup del transcriber.
-                    LaunchedEffect(transcriberState) {
-                        if (isShareFlow && transcriberState is TranscriberUiState.Success) {
-                            mainViewModel.saveTranscription((transcriberState as TranscriberUiState.Success).text)
-                        }
-                    }
 
                     val dismissAction: () -> Unit = {
                         finish()
