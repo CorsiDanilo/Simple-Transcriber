@@ -61,6 +61,27 @@ interface TranscriptionEngine {
     ): String = text
 
     /**
+     * Riassume direttamente l'audio producendo una sintesi e punti chiave.
+     */
+    suspend fun summarizeAudio(
+        audioBytes: ByteArray,
+        mimeType: String,
+        language: String,
+        onProgress: (String) -> Unit = {},
+        onPartialText: (String) -> Unit = {}
+    ): TranscriptionResult = TranscriptionResult.Error("Audio summarization not supported by this engine")
+
+    /**
+     * Riassume un testo precedentemente trascritto producendo una sintesi e punti chiave.
+     */
+    suspend fun summarizeText(
+        text: String,
+        language: String,
+        onProgress: (String) -> Unit = {},
+        onPartialText: (String) -> Unit = {}
+    ): TranscriptionResult = TranscriptionResult.Error("Text summarization not supported by this engine")
+
+    /**
      * Rilascia le risorse allocate dall'engine (es. modelli in memoria nativa).
      */
     fun release() {}

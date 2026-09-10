@@ -9,9 +9,17 @@ Transcriber uses two main technologies for data persistence: **Room** for struct
 The history is stored in a SQLite database via Room.
 
 ### Entity: `TranscriptionItem`
-- `id`: Auto-generated primary key.
-- `timestamp`: Long (milliseconds).
-- `text`: The full transcript.
+- `id`: Auto-generated primary key (`Long`).
+- `timestamp`: Creation timestamp in milliseconds (`Long`).
+- `text`: The full transcript (`String`).
+- `engine`: Engine used, e.g., "Cloud (Gemini)", "Whisper.cpp", "LiteRT" (`String?`, added in `MIGRATION_1_2`).
+- `model`: Transcription model used (`String?`, added in `MIGRATION_1_2`).
+- `summary`: Markdown summary of the audio or transcript (`String?`, added in `MIGRATION_2_3`).
+- `summaryModel`: Model used for the summary generation (`String?`, added in `MIGRATION_2_3`).
+
+### Database Migrations:
+- `MIGRATION_1_2`: Added `engine` and `model` columns.
+- `MIGRATION_2_3`: Added `summary` and `summaryModel` nullable columns.
 
 ### DAO: `TranscriptionDao`
 Provides methods for:

@@ -11,7 +11,7 @@ datastore = "1.1.1"
 navigation = "2.8.5"
 ksp = "2.2.21-2.0.4"
 litert = "1.4.2"
-litertlm = "0.1.0-alpha01" # Note: we'll use a dynamic version in build.gradle if this is not the exact one
+litertlm = "0.13.1"
 junit = "4.13.2"
 appcompat = "1.7.0"
 

@@ -28,6 +28,19 @@ interface TranscriptionEngine {
         onPartialText: (String) -> Unit
     ): String
 
+    suspend fun summarizeAudio(
+        audioBytes: ByteArray,
+        mimeType: String,
+        language: String,
+        onProgress: (String) -> Unit
+    ): SummarizationResult = SummarizationResult.Error("Summarization not supported by this engine")
+
+    suspend fun summarizeText(
+        text: String,
+        language: String,
+        onProgress: (String) -> Unit
+    ): SummarizationResult = SummarizationResult.Error("Summarization not supported by this engine")
+
     fun release()
 }
 ```
@@ -37,18 +50,25 @@ interface TranscriptionEngine {
 ### 1. Gemini Cloud Engine (`CloudEngine`)
 
 - **Backend**: Google Generative AI SDK.
-- **Strengths**: High accuracy, handles audio directly, and can return refined text in one multimodal request.
-- **Tradeoff**: Requires internet access and a Gemini API key.
-- **Refinement model**: `performsRefinementDuringTranscription()` returns `true`, so the service does not run a separate refinement pass.
+- **Strengths**: High accuracy, handles multimodal audio directly, supports direct audio summarization and post-transcription summarization.
+- **Smart Model Fallback**: Features automatic transparent failover (`executeWithFallback`). Candidate models (e.g. `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`) are prioritized newest-first. In case of quota exhaustion (HTTP 429) or transient errors (500, 503, 404), the engine automatically falls back to the next available model, updates the user in real time, and logs the exact model used.
+- **Preamble Filtering**: Strips unwanted conversational greetings or preambles, returning pure Markdown content.
+- **Refinement model**: `performsRefinementDuringTranscription()` returns `true`, transcribing and refining in a single pass.
 
-### 2. LiteRT On-Device Engine (`LiteRTEngine`)
+### 2. Whisper.cpp On-Device Engine (`WhisperEngine`)
+
+- **Backend**: Embedded C++ Whisper.cpp engine via JNI submodule (`third_party/whisper.cpp`).
+- **Strengths**: High quality offline transcription with broad multilingual support.
+- **Model formats**: Supports quantized GGML/GGUF models (Tiny, Base, Small, Medium, Large v3 Turbo).
+
+### 3. LiteRT On-Device Engine (`LiteRTEngine`)
 
 - **Backend**: LiteRT-LM models stored on device.
-- **Strengths**: Offline processing, stronger privacy, no cloud API cost.
-- **Tradeoff**: Higher RAM, CPU, battery, and model storage requirements.
-- **Refinement model**: transcription and refinement are separate local steps.
+- **Strengths**: Offline processing, strong privacy, zero API costs.
+- **Tradeoff**: Higher RAM, CPU, and storage requirements.
+- **Refinement model**: Transcription and refinement are separate local steps.
 
-### 3. AICore Engine (`AICoreEngine`)
+### 4. AICore Engine (`AICoreEngine`)
 
 - Placeholder for future Android system-level on-device AI support.
 

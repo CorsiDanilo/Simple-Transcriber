@@ -148,4 +148,38 @@
     <string name="error_aicore_unavailable">AICore is not available on this device. Use the Cloud or Local Model engine instead.</string>
     <string name="error_aicore_pending">AICore engine integration is coming soon. Use Cloud or Local Model engine for now.</string>
     <string name="error_generic">An unexpected error occurred. Please try again.</string>
+
+    <!-- Summarization strings -->
+    <string name="btn_summarize_audio">Summarize Audio</string>
+    <string name="btn_summarize_text">Summarize Text</string>
+    <string name="tab_transcription">Transcription</string>
+    <string name="tab_summary">Summary</string>
+    <string name="btn_copy_summary">Copy Summary</string>
+    <string name="btn_copy_transcription">Copy Transcription</string>
+    <string name="badge_summary_only">Summary</string>
+    <string name="badge_summary_available">Summary Available</string>
+    <string name="notif_summarizing">Generating summary...</string>
+    <string name="notif_summarizing_preview">Summarizing: %1$s</string>
+    <string name="notif_summarizing_text">Summarizing text...</string>
+    <string name="status_summarizing">Generating summary...</string>
+    <string name="error_summarize_unsupported">The selected engine does not support summarization. Please configure a Cloud API Key.</string>
+    <string name="notif_fallback_retry">Model \'%1$s\' unavailable (%2$s). Retrying with \'%3$s\'...</string>
+    <string name="error_all_models_failed">All candidate Gemini models failed. Last error: %1$s</string>
+
+    <!-- Mode & Model display info -->
+    <string name="mode_model_info">Mode: %1$s | Model: %2$s</string>
+
+    <!-- History Screen Content Descriptions -->
+    <string name="content_desc_clear_selection">Clear selection</string>
+    <string name="content_desc_select_all">Select all</string>
+    <string name="content_desc_copy_selected">Copy selected</string>
+    <string name="content_desc_delete_selected">Delete selected</string>
+
+    <!-- Updater toasts -->
+    <string name="toast_checking_updates">Checking for updates...</string>
+    <string name="toast_app_up_to_date">App is already up to date</string>
+    <string name="toast_update_check_failed">Failed to check for updates</string>
+    <string name="toast_loading_changelog">Loading changelog...</string>
+    <string name="toast_changelog_failed">Could not load the changelog.</string>
+    <string name="toast_loading_failed">Loading failed</string>
 </resources>

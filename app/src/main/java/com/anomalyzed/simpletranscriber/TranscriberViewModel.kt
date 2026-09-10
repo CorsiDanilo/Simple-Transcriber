@@ -31,13 +31,22 @@ sealed class TranscriberUiState {
     data class Loading(val progressMessage: String = "") : TranscriberUiState()
 
     /** Testo generato in streaming */
-    data class Streaming(val partialText: String, val isRefining: Boolean = false) : TranscriberUiState()
+    data class Streaming(
+        val partialText: String, 
+        val isRefining: Boolean = false,
+        val isSummary: Boolean = false
+    ) : TranscriberUiState()
 
-    /** Trascrizione completata con successo */
+    /** Trascrizione o riassunto completato con successo */
     data class Success(
         val text: String,
+        val summary: String? = null,
+        val isSummarizing: Boolean = false,
+        val isSummaryOnly: Boolean = false,
         val engineMode: String? = null,
-        val modelName: String? = null
+        val modelName: String? = null,
+        val dbItemId: Int? = null,
+        val transcriptionId: Long? = null
     ) : TranscriberUiState()
 
     /** Errore durante la trascrizione */
@@ -71,6 +80,59 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             action = TranscriptionService.ACTION_START
             putExtra(TranscriptionService.EXTRA_AUDIO_URI, uri.toString())
             putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, transcriptionId)
+            putExtra(TranscriptionService.EXTRA_MODE, TranscriptionService.MODE_TRANSCRIBE)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    /**
+     * Avvia il riassunto diretto dell'audio tramite il Foreground Service.
+     */
+    fun startSummarization(context: Context) {
+        val uri = pendingAudioUri ?: return
+        val transcriptionId = System.currentTimeMillis() * 1_000 + (System.nanoTime() % 1_000)
+        activeTranscriptionId = transcriptionId
+        TranscriptionManager.setActiveTask(transcriptionId)
+
+        val intent = Intent(context, TranscriptionService::class.java).apply {
+            action = TranscriptionService.ACTION_START
+            putExtra(TranscriptionService.EXTRA_AUDIO_URI, uri.toString())
+            putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, transcriptionId)
+            putExtra(TranscriptionService.EXTRA_MODE, TranscriptionService.MODE_SUMMARIZE_AUDIO)
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+    /**
+     * Avvia il riassunto di un testo già trascritto tramite il Service.
+     */
+    fun summarizeText(context: Context, text: String, dbItemId: Int?) {
+        val currentTaskId = activeTranscriptionId ?: TranscriptionManager.currentTaskId() ?: System.currentTimeMillis()
+        val currentSuccess = TranscriptionManager.uiState.value as? TranscriberUiState.Success
+        if (currentSuccess != null) {
+            TranscriptionManager.setTaskState(
+                currentTaskId,
+                currentSuccess.copy(isSummarizing = true)
+            )
+        }
+
+        val intent = Intent(context, TranscriptionService::class.java).apply {
+            action = TranscriptionService.ACTION_SUMMARIZE_TEXT
+            putExtra(TranscriptionService.EXTRA_TRANSCRIPTION_ID, currentTaskId)
+            putExtra(TranscriptionService.EXTRA_TEXT, text)
+            if (dbItemId != null) {
+                putExtra(TranscriptionService.EXTRA_DB_ID, dbItemId)
+            }
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -91,7 +153,17 @@ class TranscriberViewModel(application: Application) : AndroidViewModel(applicat
             viewModelScope.launch(Dispatchers.IO) {
                 val stored = TranscriptionStateStore(getApplication()).consume(id)
                 when (stored) {
-                    is FinalState.Success -> TranscriptionManager.setState(TranscriberUiState.Success(stored.text, stored.engineMode, stored.modelName))
+                    is FinalState.Success -> TranscriptionManager.setState(
+                        TranscriberUiState.Success(
+                            text = stored.text,
+                            summary = stored.summary,
+                            isSummaryOnly = stored.isSummaryOnly,
+                            engineMode = stored.engineMode,
+                            modelName = stored.modelName,
+                            dbItemId = stored.dbItemId,
+                            transcriptionId = id
+                        )
+                    )
                     is FinalState.Error   -> TranscriptionManager.setState(TranscriberUiState.Error(stored.message))
                     null -> { /* no persisted state — Setup is the correct initial state */ }
                 }

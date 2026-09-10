@@ -10,22 +10,26 @@ A privacy-focused Android application for high-quality audio transcription and t
 
 - **Hybrid transcription engines**: choose Gemini Cloud for high accuracy, LiteRT-LM or Whisper.cpp for private offline transcription.
 - **Single-pass Gemini refinement**: Gemini Cloud transcribes and refines in one multimodal request, returning the final cleaned text directly.
+- **AI Audio & Text Summarization**: generate concise bullet-point summaries directly from audio files or from completed transcripts via Gemini with a clean two-tab review dialog.
+- **Smart Gemini Model Fallback**: transparent, automatic failover across models (e.g., `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`) sorted latest-first for maximum uptime and resilience.
+- **Native Markdown Rendering**: formatted summaries and notes rendered with native Compose text styles (headers, bullet points, bold, code, quotes).
 - **Multiple concurrent transcriptions**: each transcription gets its own foreground notification and progress state.
 - **Notification controls**: reopen a specific transcription from its notification, cancel an ongoing job, or copy the final transcript directly from the completed notification.
 - **Background execution**: send only the Transcriber dialog to background while the source app stays in the foreground.
-- **Transcription history**: store, search, copy, and delete previous transcriptions locally with Room.
+- **Transcription history**: store, search, view summaries, swipe-to-copy active content, and delete previous transcriptions locally with Room.
 - **On-device model manager**: download, select, and delete LiteRT-LM and Whisper.cpp models inside the app.
 - **In-app updates**: check GitHub releases manually, view markdown changelogs, and install APK updates.
-- **Italian localization**: full Italian translation with a runtime language selector in Settings (System Default / English / Italian).
+- **Bilingual localization**: full English and Italian translations with a runtime language selector in Settings (System Default / English / Italian).
 
 ## Tech Stack
 
 | Category | Technology |
 | --- | --- |
 | UI | Jetpack Compose / Material 3 |
-| Cloud AI | Google Generative AI SDK (Gemini) |
-| On-device AI | LiteRT / LiteRT-LM |
-| Database | Room |
+| Cloud AI | Google Generative AI SDK (Gemini) with Dynamic Model Fallback |
+| On-device AI | LiteRT / LiteRT-LM / Whisper.cpp |
+| Markdown | Custom Jetpack Compose Native Markdown Parser |
+| Database | Room (with migrations) |
 | Preferences | Jetpack DataStore |
 | Architecture | MVVM with a foreground transcription service |
 

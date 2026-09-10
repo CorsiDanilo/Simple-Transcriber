@@ -76,7 +76,7 @@ class MainActivity : AppCompatActivity() {
     private val transcriberViewModel: TranscriberViewModel by viewModels()
     private var isShareFlow by mutableStateOf(false)
     private var showTranscriberDialog by mutableStateOf(false)
-    private var startTranscriptionAfterNotificationPermission = false
+    private var pendingPermissionAction: (() -> Unit)? = null
     private var isActivityVisible = false
     private var hasBeenVisible = false
 
@@ -216,6 +216,8 @@ class MainActivity : AppCompatActivity() {
                             transcriberViewModel.clearError()
                         },
                         onStartTranscription = { startTranscriptionWithNotificationPermission() },
+                        onStartSummarizeAudio = { startSummarizationWithNotificationPermission() },
+                        onSummarizeText = { text, dbId -> transcriberViewModel.summarizeText(this@MainActivity, text, dbId) },
                         googleModels = googleModels
                     )
                 } else {
@@ -255,7 +257,7 @@ class MainActivity : AppCompatActivity() {
                                     onCheckForUpdates = {
                                         scope.launch {
                                             try {
-                                                Toast.makeText(context, "Checking for updates...", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.toast_checking_updates), Toast.LENGTH_SHORT).show()
                                                 val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
                                                 val currentVersion = packageInfo.versionName ?: "1.0.0"
                                                 
@@ -264,10 +266,10 @@ class MainActivity : AppCompatActivity() {
                                                 if (info.updateAvailable) {
                                                     updateInfo = info
                                                 } else {
-                                                    Toast.makeText(context, "App is already up to date", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, context.getString(R.string.toast_app_up_to_date), Toast.LENGTH_SHORT).show()
                                                 }
                                             } catch (e: Exception) {
-                                                Toast.makeText(context, "Failed to check for updates", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.toast_update_check_failed), Toast.LENGTH_SHORT).show()
                                                 e.printStackTrace()
                                             }
                                         }
@@ -275,7 +277,7 @@ class MainActivity : AppCompatActivity() {
                                     onViewChangelog = {
                                         scope.launch {
                                             try {
-                                                Toast.makeText(context, "Loading changelog...", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.toast_loading_changelog), Toast.LENGTH_SHORT).show()
                                                 val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
                                                 val currentVersion = packageInfo.versionName ?: "1.0.0"
                                                 val updater = AppUpdater()
@@ -283,10 +285,10 @@ class MainActivity : AppCompatActivity() {
                                                 if (info.changelog.isNotBlank()) {
                                                     changelogInfo = info
                                                 } else {
-                                                    Toast.makeText(context, "Could not load the changelog.", Toast.LENGTH_SHORT).show()
+                                                    Toast.makeText(context, context.getString(R.string.toast_changelog_failed), Toast.LENGTH_SHORT).show()
                                                 }
                                             } catch (e: Exception) {
-                                                Toast.makeText(context, "Loading failed", Toast.LENGTH_SHORT).show()
+                                                Toast.makeText(context, context.getString(R.string.toast_loading_failed), Toast.LENGTH_SHORT).show()
                                                 e.printStackTrace()
                                             }
                                         }
@@ -358,12 +360,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startTranscriptionWithNotificationPermission() {
+    private fun executeWithNotificationPermission(action: () -> Unit) {
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
         ) {
-            startTranscriptionAfterNotificationPermission = true
+            pendingPermissionAction = action
             requestPermissions(
                 arrayOf(android.Manifest.permission.POST_NOTIFICATIONS),
                 REQUEST_POST_NOTIFICATIONS
@@ -374,7 +376,7 @@ class MainActivity : AppCompatActivity() {
         if (!NotificationManagerCompat.from(this).areNotificationsEnabled()) {
             Toast.makeText(
                 this,
-                "Enable notifications to run transcription in background.",
+                "Enable notifications to run in background.",
                 Toast.LENGTH_LONG
             ).show()
             return
@@ -386,14 +388,26 @@ class MainActivity : AppCompatActivity() {
             if (channel?.importance == NotificationManager.IMPORTANCE_NONE) {
                 Toast.makeText(
                     this,
-                    "Enable the Transcriber notification channel to run transcription in background.",
+                    "Enable the Transcriber notification channel to run in background.",
                     Toast.LENGTH_LONG
                 ).show()
                 return
             }
         }
 
-        transcriberViewModel.startTranscription(this)
+        action()
+    }
+
+    private fun startTranscriptionWithNotificationPermission() {
+        executeWithNotificationPermission {
+            transcriberViewModel.startTranscription(this)
+        }
+    }
+
+    private fun startSummarizationWithNotificationPermission() {
+        executeWithNotificationPermission {
+            transcriberViewModel.startSummarization(this)
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -403,18 +417,21 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
 
-        if (requestCode != REQUEST_POST_NOTIFICATIONS || !startTranscriptionAfterNotificationPermission) {
+        if (requestCode != REQUEST_POST_NOTIFICATIONS) {
             return
         }
 
-        startTranscriptionAfterNotificationPermission = false
+        val action = pendingPermissionAction
+        pendingPermissionAction = null
+        if (action == null) return
+
         val granted = grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED
         if (granted) {
-            startTranscriptionWithNotificationPermission()
+            executeWithNotificationPermission(action)
         } else {
             Toast.makeText(
                 this,
-                "Notification permission is required to run transcription in background.",
+                "Notification permission is required to run in background.",
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -498,6 +515,6 @@ class MainActivity : AppCompatActivity() {
     private fun copyToClipboard(text: String) {
         val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         clipboard.setPrimaryClip(ClipData.newPlainText("Transcriber", text))
-        Toast.makeText(this, "Copied!", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, getString(R.string.toast_copied), Toast.LENGTH_SHORT).show()
     }
 }

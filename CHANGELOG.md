@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.5.0] - 2026-09-10
+### Added
+- **AI Audio & Text Summarization**:
+  - Direct audio summarization: generate concise, structured bullet-point summaries directly from audio files via Gemini without requiring a full manual transcript read.
+  - Post-transcription text summarization: generate summaries from existing transcriptions in one tap.
+  - Two-tab dialog ("Transcript" and "Summary") allowing users to view and toggle between transcription and summary effortlessly.
+  - Room database schema migration (`MIGRATION_2_3`) with `summary` and `summaryModel` fields, displaying badges and summary views in History.
+- **Markdown Rendering**:
+  - Full inline and block Markdown rendering in Jetpack Compose for both the result dialog and History items (bold, headers, bullet points, numbered lists, italics, inline code, and blockquotes).
+  - Clean output filter that removes conversational preambles (e.g., "Here is the summary...", "Ecco il riassunto...").
+- **Smart Gemini Model Fallback with Latest-First Ordering**:
+  - Transparent failover mechanism across Gemini models (e.g., `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`).
+  - Fallback candidates are dynamically sorted chronologically from newest to oldest.
+  - Graceful recovery from quota limits (HTTP 429), model unavailability (503/500/404), with real-time UI/notification progress updates and recording of the successful model in the database.
+- **Dynamic Contextual Copy in History**:
+  - Swipe-to-copy (left-to-right) and multi-selection copy dynamically copy whichever content is actively selected (transcription or summary).
+- **Full Localization Parity**:
+  - 100% complete string parity between English and Italian across all screens, dialogs, badges, and notification messages.
+
+### Changed
+- Streamlined History card interface by removing the redundant copy button in favor of the intuitive swipe-to-copy gesture.
+
 ## [1.4.0] - 2026-07-10
 ### Fixed
 - Fixed the in-app updater downloading the debug build variant instead of matching the user's installed build variant (debug or signed/release).

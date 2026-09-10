@@ -18,6 +18,7 @@ endif()
 find_library(LOG_LIB log)
 
 include(FetchContent)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(GGML_OPENMP OFF CACHE BOOL "" FORCE)
 set(GGML_NATIVE OFF CACHE BOOL "" FORCE)
 set(GGML_CPU_KLEIDIAI OFF CACHE BOOL "" FORCE)
@@ -70,4 +71,4 @@ target_include_directories(
     ${WHISPER_LIB_DIR}/ggml/src/ggml-cpu
 )
 
-target_link_libraries(transcriber_whisper ${LOG_LIB} android ggml)
+target_link_libraries(transcriber_whisper ${LOG_LIB} android ggml c++_static c++abi)

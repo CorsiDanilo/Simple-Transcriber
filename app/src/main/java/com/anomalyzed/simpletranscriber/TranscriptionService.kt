@@ -56,10 +56,16 @@ class TranscriptionService : Service() {
         const val ACTION_CANCEL = "ACTION_CANCEL"
         const val ACTION_COPY = "ACTION_COPY"
         const val ACTION_REFRESH_NOTIFICATION = "ACTION_REFRESH_NOTIFICATION"
+        const val ACTION_SUMMARIZE_TEXT = "ACTION_SUMMARIZE_TEXT"
         const val EXTRA_AUDIO_URI = "EXTRA_AUDIO_URI"
         const val EXTRA_TRANSCRIPTION_ID = "EXTRA_TRANSCRIPTION_ID"
         const val EXTRA_NOTIFICATION_TEXT = "EXTRA_NOTIFICATION_TEXT"
         const val EXTRA_NOTIFICATION_TITLE = "EXTRA_NOTIFICATION_TITLE"
+        const val EXTRA_MODE = "EXTRA_MODE"
+        const val EXTRA_TEXT = "EXTRA_TEXT"
+        const val EXTRA_DB_ID = "EXTRA_DB_ID"
+        const val MODE_TRANSCRIBE = "MODE_TRANSCRIBE"
+        const val MODE_SUMMARIZE_AUDIO = "MODE_SUMMARIZE_AUDIO"
         const val NOTIFICATION_ID_BASE = 1001
         const val CHANNEL_ID = "transcription_channel"
     }
@@ -80,22 +86,51 @@ class TranscriptionService : Service() {
                     val uri = Uri.parse(uriString)
                     val fallbackId = System.currentTimeMillis() * 1_000 + (System.nanoTime() % 1_000)
                     val transcriptionId = intent.getLongExtra(EXTRA_TRANSCRIPTION_ID, fallbackId)
+                    val mode = intent.getStringExtra(EXTRA_MODE) ?: MODE_TRANSCRIBE
                     TranscriptionManager.setActiveTask(transcriptionId)
+                    val startingText = if (mode == MODE_SUMMARIZE_AUDIO) {
+                        getString(R.string.notif_summarizing)
+                    } else {
+                        getString(R.string.notif_starting)
+                    }
                     startForeground(
                         notificationId(transcriptionId),
                         createNotification(
                             title = getString(R.string.app_name),
-                            text = getString(R.string.notif_starting),
+                            text = startingText,
                             ongoing = true,
                             autoCancel = false,
                             pendingIntent = createDefaultPendingIntent(transcriptionId),
                             transcriptionId = transcriptionId
                         )
                     )
-                    startTranscription(transcriptionId, uri)
+                    if (mode == MODE_SUMMARIZE_AUDIO) {
+                        startSummarizeAudio(transcriptionId, uri)
+                    } else {
+                        startTranscription(transcriptionId, uri)
+                    }
                 } else {
                     stopSelf()
                 }
+            }
+            ACTION_SUMMARIZE_TEXT -> {
+                val fallbackId = System.currentTimeMillis() * 1_000 + (System.nanoTime() % 1_000)
+                val transcriptionId = intent.getLongExtra(EXTRA_TRANSCRIPTION_ID, fallbackId)
+                val text = intent.getStringExtra(EXTRA_TEXT).orEmpty()
+                val dbId = if (intent.hasExtra(EXTRA_DB_ID)) intent.getIntExtra(EXTRA_DB_ID, -1).takeIf { it != -1 } else null
+                TranscriptionManager.setActiveTask(transcriptionId)
+                startForeground(
+                    notificationId(transcriptionId),
+                    createNotification(
+                        title = getString(R.string.app_name),
+                        text = getString(R.string.notif_summarizing_text),
+                        ongoing = true,
+                        autoCancel = false,
+                        pendingIntent = createDefaultPendingIntent(transcriptionId),
+                        transcriptionId = transcriptionId
+                    )
+                )
+                startSummarizeText(transcriptionId, text, dbId)
             }
             ACTION_CANCEL -> {
                 val transcriptionId = intent.getLongExtra(EXTRA_TRANSCRIPTION_ID, MainActivity.NO_TRANSCRIPTION_ID)
@@ -179,6 +214,9 @@ class TranscriptionService : Service() {
 
                 when (result) {
                     is TranscriptionResult.Success -> {
+                        if (engine is CloudEngine) {
+                            engine.lastSuccessfulModel?.let { modelNameStr = it }
+                        }
                         val finalText = if (engine.performsRefinementDuringTranscription()) {
                             result.text
                         } else {
@@ -210,7 +248,7 @@ class TranscriptionService : Service() {
                             }
                         }
                         
-                        db.transcriptionDao().insert(
+                        val rowId = db.transcriptionDao().insert(
                             TranscriptionItem(
                                 timestamp = System.currentTimeMillis(), 
                                 text = finalText,
@@ -218,8 +256,29 @@ class TranscriptionService : Service() {
                                 modelName = modelNameStr
                             )
                         )
-                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Success(finalText, engineModeStr, modelNameStr))
-                        TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Success(finalText, engineModeStr, modelNameStr))
+                        val dbId = rowId.toInt()
+                        val successState = TranscriberUiState.Success(
+                            text = finalText,
+                            summary = null,
+                            isSummarizing = false,
+                            isSummaryOnly = false,
+                            engineMode = engineModeStr,
+                            modelName = modelNameStr,
+                            dbItemId = dbId,
+                            transcriptionId = transcriptionId
+                        )
+                        TranscriptionManager.setTaskState(transcriptionId, successState)
+                        TranscriptionStateStore(this@TranscriptionService).persist(
+                            transcriptionId,
+                            FinalState.Success(
+                                text = finalText,
+                                summary = null,
+                                isSummaryOnly = false,
+                                engineMode = engineModeStr,
+                                modelName = modelNameStr,
+                                dbItemId = dbId
+                            )
+                        )
                         showSuccessNotification(transcriptionId, finalText)
                     }
                     is TranscriptionResult.Error -> {
@@ -246,6 +305,279 @@ class TranscriptionService : Service() {
         transcriptionJob.start()
     }
 
+    private fun startSummarizeAudio(transcriptionId: Long, uri: Uri) {
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Loading(getString(R.string.notif_initializing)))
+            var engine: TranscriptionEngine? = null
+            try {
+                val settings = prefManager.settingsFlow.first()
+                val engineType = EngineType.fromKey(settings.transcriptionEngine)
+
+                var engineModeStr = engineType.name
+                var modelNameStr: String? = null
+
+                if (engineType == EngineType.LITERT) {
+                    val catalogResult = modelRepository.fetchModelCatalog(settings.modelCatalogUrl)
+                    val catalog = catalogResult.getOrDefault(emptyList())
+                    val selectedModel = catalog.find { it.id == settings.selectedModelId }
+                    modelNameStr = selectedModel?.displayName ?: "Local Model"
+                } else if (engineType == EngineType.CLOUD) {
+                    modelNameStr = settings.selectedCloudModel
+                } else if (engineType == EngineType.AICORE) {
+                    modelNameStr = "Gemini Nano"
+                }
+
+                engine = createEngine(engineType, settings.selectedModelId, settings.apiKey, settings.selectedCloudModel)
+
+                if (engine is WhisperCppEngine) {
+                    if (settings.apiKey.isNotBlank()) {
+                        engine = CloudEngine(settings.apiKey, settings.selectedCloudModel)
+                        engineModeStr = EngineType.CLOUD.name
+                        modelNameStr = settings.selectedCloudModel
+                    } else {
+                        val err = getString(R.string.error_summarize_unsupported)
+                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(err))
+                        TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Error(err))
+                        showErrorNotification(transcriptionId, err)
+                        return@launch
+                    }
+                }
+
+                val audioBytes = readUriToByteArray(uri)
+                val mimeType = contentResolver.getType(uri) ?: "audio/ogg"
+
+                val result = engine.summarizeAudio(
+                    audioBytes = audioBytes,
+                    mimeType = mimeType,
+                    language = settings.language,
+                    onProgress = { progressMessage ->
+                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Loading(progressMessage))
+                        updateNotification(
+                            transcriptionId = transcriptionId,
+                            title = getString(R.string.app_name),
+                            text = progressMessage,
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent(transcriptionId)
+                        )
+                    },
+                    onPartialText = { summaryText ->
+                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Streaming(summaryText, isRefining = false, isSummary = true))
+                        val preview = buildPreview(summaryText)
+                        val displayText = if (preview.isNotEmpty()) {
+                            getString(R.string.notif_summarizing_preview, preview)
+                        } else {
+                            getString(R.string.notif_summarizing)
+                        }
+                        updateNotification(
+                            transcriptionId = transcriptionId,
+                            title = getString(R.string.app_name),
+                            text = displayText,
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent(transcriptionId)
+                        )
+                    }
+                )
+
+                when (result) {
+                    is TranscriptionResult.Success -> {
+                        if (engine is CloudEngine) {
+                            engine.lastSuccessfulModel?.let { modelNameStr = it }
+                        }
+                        val summary = result.text
+                        val rowId = db.transcriptionDao().insert(
+                            TranscriptionItem(
+                                timestamp = System.currentTimeMillis(),
+                                text = summary,
+                                summary = summary,
+                                isSummaryOnly = true,
+                                engineMode = engineModeStr,
+                                modelName = modelNameStr
+                            )
+                        )
+                        val dbId = rowId.toInt()
+                        val successState = TranscriberUiState.Success(
+                            text = summary,
+                            summary = summary,
+                            isSummarizing = false,
+                            isSummaryOnly = true,
+                            engineMode = engineModeStr,
+                            modelName = modelNameStr,
+                            dbItemId = dbId,
+                            transcriptionId = transcriptionId
+                        )
+                        TranscriptionManager.setTaskState(transcriptionId, successState)
+                        TranscriptionStateStore(this@TranscriptionService).persist(
+                            transcriptionId,
+                            FinalState.Success(
+                                text = summary,
+                                summary = summary,
+                                isSummaryOnly = true,
+                                engineMode = engineModeStr,
+                                modelName = modelNameStr,
+                                dbItemId = dbId
+                            )
+                        )
+                        showSuccessNotification(transcriptionId, summary)
+                    }
+                    is TranscriptionResult.Error -> {
+                        val humanMsg = ErrorHumanizer.humanize(result.message, this@TranscriptionService)
+                        TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(humanMsg))
+                        TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Error(humanMsg))
+                        showErrorNotification(transcriptionId, humanMsg)
+                    }
+                }
+            } catch (e: CancellationException) {
+                TranscriptionManager.clearTask(transcriptionId)
+            } catch (e: Exception) {
+                val humanMsg = ErrorHumanizer.humanize(e, this@TranscriptionService)
+                TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(humanMsg))
+                TranscriptionStateStore(this@TranscriptionService).persist(transcriptionId, FinalState.Error(humanMsg))
+                showErrorNotification(transcriptionId, humanMsg)
+            } finally {
+                engine?.release()
+                activeTranscriptionJobs.remove(transcriptionId, coroutineContext[Job])
+                finishServiceIfIdle()
+            }
+        }
+        activeTranscriptionJobs[transcriptionId] = job
+        job.start()
+    }
+
+    private fun startSummarizeText(transcriptionId: Long, text: String, dbId: Int?) {
+        val job = scope.launch(start = CoroutineStart.LAZY) {
+            val existingState = TranscriptionManager.getTaskState(transcriptionId) as? TranscriberUiState.Success
+            TranscriptionManager.setTaskState(
+                transcriptionId,
+                existingState?.copy(isSummarizing = true) ?: TranscriberUiState.Loading(getString(R.string.notif_summarizing_text))
+            )
+            var engine: TranscriptionEngine? = null
+            try {
+                val settings = prefManager.settingsFlow.first()
+                val engineType = EngineType.fromKey(settings.transcriptionEngine)
+
+                engine = createEngine(engineType, settings.selectedModelId, settings.apiKey, settings.selectedCloudModel)
+
+                if (engine is WhisperCppEngine) {
+                    if (settings.apiKey.isNotBlank()) {
+                        engine = CloudEngine(settings.apiKey, settings.selectedCloudModel)
+                    } else {
+                        val err = getString(R.string.error_summarize_unsupported)
+                        if (existingState != null) {
+                            TranscriptionManager.setTaskState(transcriptionId, existingState.copy(isSummarizing = false))
+                            Toast.makeText(this@TranscriptionService, err, Toast.LENGTH_LONG).show()
+                        } else {
+                            TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(err))
+                            showErrorNotification(transcriptionId, err)
+                        }
+                        return@launch
+                    }
+                }
+
+                val result = engine.summarizeText(
+                    text = text,
+                    language = settings.language,
+                    onProgress = { progressMessage ->
+                        updateNotification(
+                            transcriptionId = transcriptionId,
+                            title = getString(R.string.app_name),
+                            text = progressMessage,
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent(transcriptionId)
+                        )
+                    },
+                    onPartialText = { partialSummary ->
+                        TranscriptionManager.setTaskState(
+                            transcriptionId,
+                            existingState?.copy(summary = partialSummary, isSummarizing = true)
+                                ?: TranscriberUiState.Streaming(partialSummary, isSummary = true)
+                        )
+                        val preview = buildPreview(partialSummary)
+                        val displayText = if (preview.isNotEmpty()) {
+                            getString(R.string.notif_summarizing_preview, preview)
+                        } else {
+                            getString(R.string.notif_summarizing_text)
+                        }
+                        updateNotification(
+                            transcriptionId = transcriptionId,
+                            title = getString(R.string.app_name),
+                            text = displayText,
+                            ongoing = true,
+                            autoCancel = false,
+                            pendingIntent = createDefaultPendingIntent(transcriptionId)
+                        )
+                    }
+                )
+
+                when (result) {
+                    is TranscriptionResult.Success -> {
+                        val finalSummary = result.text
+                        val targetDbId = dbId ?: existingState?.dbItemId
+                        if (targetDbId != null) {
+                            db.transcriptionDao().updateSummary(targetDbId, finalSummary)
+                        }
+                        val successState = TranscriberUiState.Success(
+                            text = existingState?.text ?: text,
+                            summary = finalSummary,
+                            isSummarizing = false,
+                            isSummaryOnly = false,
+                            engineMode = existingState?.engineMode ?: engineType.name,
+                            modelName = existingState?.modelName,
+                            dbItemId = targetDbId,
+                            transcriptionId = transcriptionId
+                        )
+                        TranscriptionManager.setTaskState(transcriptionId, successState)
+                        TranscriptionStateStore(this@TranscriptionService).persist(
+                            transcriptionId,
+                            FinalState.Success(
+                                text = successState.text,
+                                summary = finalSummary,
+                                isSummaryOnly = false,
+                                engineMode = successState.engineMode,
+                                modelName = successState.modelName,
+                                dbItemId = targetDbId
+                            )
+                        )
+                        showSuccessNotification(transcriptionId, finalSummary)
+                    }
+                    is TranscriptionResult.Error -> {
+                        val humanMsg = ErrorHumanizer.humanize(result.message, this@TranscriptionService)
+                        if (existingState != null) {
+                            TranscriptionManager.setTaskState(transcriptionId, existingState.copy(isSummarizing = false))
+                            Toast.makeText(this@TranscriptionService, humanMsg, Toast.LENGTH_LONG).show()
+                        } else {
+                            TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(humanMsg))
+                            showErrorNotification(transcriptionId, humanMsg)
+                        }
+                    }
+                }
+            } catch (e: CancellationException) {
+                if (existingState != null) {
+                    TranscriptionManager.setTaskState(transcriptionId, existingState.copy(isSummarizing = false))
+                } else {
+                    TranscriptionManager.clearTask(transcriptionId)
+                }
+            } catch (e: Exception) {
+                val humanMsg = ErrorHumanizer.humanize(e, this@TranscriptionService)
+                if (existingState != null) {
+                    TranscriptionManager.setTaskState(transcriptionId, existingState.copy(isSummarizing = false))
+                    Toast.makeText(this@TranscriptionService, humanMsg, Toast.LENGTH_LONG).show()
+                } else {
+                    TranscriptionManager.setTaskState(transcriptionId, TranscriberUiState.Error(humanMsg))
+                    showErrorNotification(transcriptionId, humanMsg)
+                }
+            } finally {
+                engine?.release()
+                activeTranscriptionJobs.remove(transcriptionId, coroutineContext[Job])
+                finishServiceIfIdle()
+            }
+        }
+        activeTranscriptionJobs[transcriptionId] = job
+        job.start()
+    }
+
     private fun cancelTranscription(transcriptionId: Long) {
         activeTranscriptionJobs.remove(transcriptionId)?.cancel(CancellationException(getString(R.string.settings_cancel_transcription)))
         TranscriptionManager.clearTask(transcriptionId)
@@ -258,7 +590,7 @@ class TranscriptionService : Service() {
 
     private fun copyTranscriptionToClipboard(transcriptionId: Long) {
         val state = TranscriptionManager.getTaskState(transcriptionId) as? TranscriberUiState.Success
-        val text = state?.text.orEmpty()
+        val text = (if (state?.isSummaryOnly == true || (state?.summary != null && state.text.isBlank())) state.summary else state?.summary ?: state?.text).orEmpty()
         if (text.isBlank()) {
             Toast.makeText(this, getString(R.string.toast_no_transcription_to_copy), Toast.LENGTH_SHORT).show()
             return
@@ -499,7 +831,9 @@ class TranscriptionService : Service() {
             }
             is TranscriberUiState.Streaming -> {
                 val preview = buildPreview(state.partialText)
-                val text = if (state.isRefining) {
+                val text = if (state.isSummary) {
+                    if (preview.isNotEmpty()) getString(R.string.notif_summarizing_preview, preview) else getString(R.string.notif_summarizing)
+                } else if (state.isRefining) {
                     if (preview.isNotEmpty()) getString(R.string.notif_refining_preview, preview) else getString(R.string.notif_refining)
                 } else {
                     if (preview.isNotEmpty()) getString(R.string.notif_transcribing_preview, preview) else getString(R.string.notif_transcribing)
@@ -513,13 +847,14 @@ class TranscriptionService : Service() {
                 )
             }
             is TranscriberUiState.Success -> {
+                val displayText = state.summary ?: state.text
                 NotificationPayload(
                     title = getString(R.string.notif_complete_title),
-                    text = state.text,
+                    text = displayText,
                     ongoing = false,
                     autoCancel = true,
                     pendingIntent = createCompletionPendingIntent(transcriptionId),
-                    bigText = state.text,
+                    bigText = displayText,
                     showCopyAction = true
                 )
             }

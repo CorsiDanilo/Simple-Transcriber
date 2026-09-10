@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
@@ -32,6 +33,7 @@ import com.anomalyzed.simpletranscriber.ui.theme.DarkGray
 import com.anomalyzed.simpletranscriber.ui.theme.Gold
 import androidx.compose.ui.res.stringResource
 import com.anomalyzed.simpletranscriber.R
+import com.anomalyzed.simpletranscriber.ui.utils.parseMarkdown
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -52,13 +54,24 @@ fun HistoryScreen(
     var selectedIds by remember { mutableStateOf(setOf<Int>()) }
     val isSelectionMode = selectedIds.isNotEmpty()
 
+    // Map to track whether summary or transcription is selected per item
+    val summaryViewMap = remember { mutableStateMapOf<Int, Boolean>() }
+
+    fun getDisplayTextForItem(item: TranscriptionItem): String {
+        val isShowingSummary = item.isSummaryOnly || (item.summary != null && summaryViewMap[item.id] == true)
+        return if (isShowingSummary && item.summary != null) item.summary else item.text
+    }
+
     // Dialog state
     var itemToDelete by remember { mutableStateOf<TranscriptionItem?>(null) }
     var showBulkDeleteConfirm by remember { mutableStateOf(false) }
 
     val filteredItems = remember(items, searchQuery) {
         if (searchQuery.isBlank()) items
-        else items.filter { it.text.contains(searchQuery, ignoreCase = true) }
+        else items.filter {
+            it.text.contains(searchQuery, ignoreCase = true) ||
+            (it.summary != null && it.summary.contains(searchQuery, ignoreCase = true))
+        }
     }
 
     // Single-item delete confirmation dialog
@@ -118,7 +131,7 @@ fun HistoryScreen(
                     title = { Text(stringResource(R.string.selected_count, selectedIds.size), fontWeight = FontWeight.Bold) },
                     navigationIcon = {
                         IconButton(onClick = { selectedIds = emptySet() }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear selection")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.content_desc_clear_selection))
                         }
                     },
                     actions = {
@@ -126,23 +139,23 @@ fun HistoryScreen(
                         IconButton(onClick = {
                             selectedIds = filteredItems.map { it.id }.toSet()
                         }) {
-                            Icon(Icons.Default.SelectAll, contentDescription = "Select all")
+                            Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.content_desc_select_all))
                         }
                         // Copy selected to clipboard
                         IconButton(onClick = {
                             val combined = items
                                 .filter { it.id in selectedIds }
-                                .joinToString("\n\n") { it.text }
+                                .joinToString("\n\n") { getDisplayTextForItem(it) }
                             onCopyToClipboard(combined)
                             selectedIds = emptySet()
                         }) {
-                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy selected")
+                            Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.content_desc_copy_selected))
                         }
                         // Delete selected
                         IconButton(onClick = { showBulkDeleteConfirm = true }) {
                             Icon(
                                 Icons.Default.Delete,
-                                contentDescription = "Delete selected",
+                                contentDescription = stringResource(R.string.content_desc_delete_selected),
                                 tint = MaterialTheme.colorScheme.error
                             )
                         }
@@ -193,7 +206,9 @@ fun HistoryScreen(
                         item = item,
                         isSelected = item.id in selectedIds,
                         isSelectionMode = isSelectionMode,
-                        onCopyToClipboard = { onCopyToClipboard(item.text) },
+                        showSummary = summaryViewMap[item.id] ?: false,
+                        onToggleShowSummary = { summaryViewMap[item.id] = it },
+                        onCopyToClipboard = { textToCopy -> onCopyToClipboard(textToCopy) },
                         onDeleteRequest = { itemToDelete = item },
                         onClick = {
                             if (isSelectionMode) {
@@ -222,26 +237,35 @@ fun HistoryItemCard(
     item: TranscriptionItem,
     isSelected: Boolean,
     isSelectionMode: Boolean,
-    onCopyToClipboard: () -> Unit,
+    showSummary: Boolean,
+    onToggleShowSummary: (Boolean) -> Unit,
+    onCopyToClipboard: (String) -> Unit,
     onDeleteRequest: () -> Unit,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val isSummaryActive = (showSummary || item.isSummaryOnly) && item.summary != null
+    val displayText = if (isSummaryActive) item.summary!! else item.text
+
     val dateStr = remember(item.timestamp) {
         val sdf = SimpleDateFormat("dd MMM • hh:mm a", Locale.getDefault())
         sdf.format(Date(item.timestamp))
     }
 
+    val currentDisplayText by rememberUpdatedState(displayText)
+    val currentOnCopy by rememberUpdatedState(onCopyToClipboard)
+    val currentOnDelete by rememberUpdatedState(onDeleteRequest)
+
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             when (value) {
                 SwipeToDismissBoxValue.StartToEnd -> {
-                    // Swipe sx→dx: copia nella clipboard
-                    onCopyToClipboard()
+                    // Swipe sx→dx: copia nella clipboard il testo attualmente visualizzato
+                    currentOnCopy(currentDisplayText)
                 }
                 SwipeToDismissBoxValue.EndToStart -> {
                     // Swipe dx→sx: chiedi conferma eliminazione
-                    onDeleteRequest()
+                    currentOnDelete()
                 }
                 else -> Unit
             }
@@ -319,23 +343,106 @@ fun HistoryItemCard(
             )
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = dateStr,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else Gold,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = dateStr,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else Gold,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    if (item.isSummaryOnly) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.secondaryContainer
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(R.string.badge_summary_only),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
+                        }
+                    } else if (item.summary != null) {
+                        Surface(
+                            shape = RoundedCornerShape(6.dp),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(12.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(R.string.badge_summary_available),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    }
+                }
+
                 if (item.engineMode != null && item.modelName != null) {
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "Mode: ${item.engineMode} | Model: ${item.modelName}",
+                        text = stringResource(R.string.mode_model_info, item.engineMode, item.modelName),
                         color = Color.Gray,
                         fontSize = 11.sp
                     )
                 }
+
+                if (item.summary != null && !item.isSummaryOnly) {
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        FilterChip(
+                            selected = !showSummary,
+                            onClick = { onToggleShowSummary(false) },
+                            label = { Text(stringResource(R.string.tab_transcription), fontSize = 11.sp) }
+                        )
+                        FilterChip(
+                            selected = showSummary,
+                            onClick = { onToggleShowSummary(true) },
+                            label = { Text(stringResource(R.string.tab_summary), fontSize = 11.sp) },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            }
+                        )
+                    }
+                }
+
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    text = item.text,
+                    text = parseMarkdown(displayText),
                     style = MaterialTheme.typography.bodyMedium,
                     lineHeight = 20.sp
                 )

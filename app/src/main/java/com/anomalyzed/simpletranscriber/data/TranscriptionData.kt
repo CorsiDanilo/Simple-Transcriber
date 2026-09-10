@@ -11,6 +11,8 @@ data class TranscriptionItem(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val timestamp: Long,
     val text: String,
+    val summary: String? = null,
+    val isSummaryOnly: Boolean = false,
     val engineMode: String? = null,
     val modelName: String? = null
 )
@@ -21,7 +23,13 @@ interface TranscriptionDao {
     fun getAll(): Flow<List<TranscriptionItem>>
 
     @Insert
-    suspend fun insert(item: TranscriptionItem)
+    suspend fun insert(item: TranscriptionItem): Long
+
+    @Query("UPDATE transcriptions SET summary = :summary WHERE id = :id")
+    suspend fun updateSummary(id: Int, summary: String)
+
+    @Query("UPDATE transcriptions SET summary = :summary WHERE timestamp = :timestamp")
+    suspend fun updateSummaryByTimestamp(timestamp: Long, summary: String)
 
     @Query("DELETE FROM transcriptions")
     suspend fun clearAll()
@@ -33,7 +41,7 @@ interface TranscriptionDao {
     suspend fun deleteByIds(ids: Set<Int>)
 }
 
-@Database(entities = [TranscriptionItem::class], version = 2)
+@Database(entities = [TranscriptionItem::class], version = 3)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun transcriptionDao(): TranscriptionDao
 
@@ -45,6 +53,13 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE transcriptions ADD COLUMN summary TEXT DEFAULT NULL")
+                db.execSQL("ALTER TABLE transcriptions ADD COLUMN isSummaryOnly INTEGER NOT NULL DEFAULT 0")
+            }
+        }
+
         @Volatile private var INSTANCE: AppDatabase? = null
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -53,7 +68,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "watranscriber_db"
                 )
-                .addMigrations(MIGRATION_1_2)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                 .build()
                 INSTANCE = instance
                 instance

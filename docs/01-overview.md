@@ -22,10 +22,14 @@ Transcriber is an Android application for converting audio into readable text wh
 
 ## Current Capabilities
 
-- Gemini Cloud can transcribe and refine in a single multimodal request.
-- LiteRT-LM can run local transcription and a separate local refinement pass.
-- Multiple active transcription jobs are tracked independently.
-- Completed notifications show the final transcript and provide a Copy action.
+- Gemini Cloud transcribes and refines in a single multimodal request.
+- Audio and text summarization: direct audio summarization and post-transcription summarization via Gemini with a two-tab review interface.
+- Smart Gemini model fallback: automatic failover across models sorted chronologically newest-first for high availability during rate limits.
+- Native Markdown rendering: headers, lists, code, and styling rendered cleanly in Jetpack Compose without conversational preambles.
+- LiteRT-LM and Whisper.cpp for private, fully offline on-device transcription.
+- Multiple active transcription jobs tracked independently with individual notifications.
+- Transcription history with tabbed transcript/summary view and dynamic swipe-to-copy.
+- Completed notifications showing the final transcript with direct Copy action.
 
 ## Future Roadmap
 

@@ -148,4 +148,38 @@
     <string name="error_aicore_unavailable">AICore non è disponibile su questo dispositivo. Usa il motore Cloud o Modello Locale.</string>
     <string name="error_aicore_pending">L\'integrazione del motore AICore è in arrivo. Per ora usa il motore Cloud o Modello Locale.</string>
     <string name="error_generic">Si è verificato un errore imprevisto. Riprova.</string>
+
+    <!-- Summarization strings -->
+    <string name="btn_summarize_audio">Riassumi audio</string>
+    <string name="btn_summarize_text">Riassumi testo</string>
+    <string name="tab_transcription">Trascrizione</string>
+    <string name="tab_summary">Riassunto</string>
+    <string name="btn_copy_summary">Copia riassunto</string>
+    <string name="btn_copy_transcription">Copia trascrizione</string>
+    <string name="badge_summary_only">Riassunto</string>
+    <string name="badge_summary_available">Riassunto disponibile</string>
+    <string name="notif_summarizing">Generazione riassunto in corso...</string>
+    <string name="notif_summarizing_preview">Riassunto: %1$s</string>
+    <string name="notif_summarizing_text">Elaborazione riassunto...</string>
+    <string name="status_summarizing">Generazione riassunto...</string>
+    <string name="error_summarize_unsupported">Il motore selezionato non supporta il riassunto. Inserisci una chiave API Cloud o usa un modello compatibile.</string>
+    <string name="notif_fallback_retry">Modello \'%1$s\' non disponibile (%2$s). Tentativo con \'%3$s\' in corso...</string>
+    <string name="error_all_models_failed">Tutti i modelli Gemini candidati hanno fallito. Ultimo errore: %1$s</string>
+
+    <!-- Mode & Model display info -->
+    <string name="mode_model_info">Modalità: %1$s | Modello: %2$s</string>
+
+    <!-- History Screen Content Descriptions -->
+    <string name="content_desc_clear_selection">Deseleziona tutto</string>
+    <string name="content_desc_select_all">Seleziona tutto</string>
+    <string name="content_desc_copy_selected">Copia selezionati</string>
+    <string name="content_desc_delete_selected">Elimina selezionati</string>
+
+    <!-- Updater toasts -->
+    <string name="toast_checking_updates">Ricerca aggiornamenti in corso...</string>
+    <string name="toast_app_up_to_date">L\'app è già aggiornata</string>
+    <string name="toast_update_check_failed">Impossibile verificare la presenza di aggiornamenti</string>
+    <string name="toast_loading_changelog">Caricamento changelog in corso...</string>
+    <string name="toast_changelog_failed">Impossibile caricare il changelog.</string>
+    <string name="toast_loading_failed">Caricamento non riuscito</string>
 </resources>

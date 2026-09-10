@@ -27,6 +27,7 @@ import com.anomalyzed.simpletranscriber.R
 import com.anomalyzed.simpletranscriber.TranscriberUiState
 import com.anomalyzed.simpletranscriber.engine.EngineType
 import com.anomalyzed.simpletranscriber.ui.theme.Gold
+import com.anomalyzed.simpletranscriber.ui.utils.parseMarkdown
 
 @Composable
 fun TranscriberScreen(
@@ -34,6 +35,8 @@ fun TranscriberScreen(
     onDismiss: () -> Unit,
     onCopyToClipboard: (String) -> Unit,
     onStartTranscription: () -> Unit,
+    onStartSummarizeAudio: () -> Unit = {},
+    onSummarizeText: (String, Int?) -> Unit = { _, _ -> },
     onCancelTranscription: () -> Unit,
     onUpdateApiKey: (String) -> Unit,
     onUpdateLanguage: (String) -> Unit,
@@ -107,11 +110,22 @@ fun TranscriberScreen(
                         onCloudModelChange = onUpdateCloudModel,
                         onLocalModelChange = onUpdateLocalModel,
                         onStart = onStartTranscription,
+                        onStartSummarizeAudio = onStartSummarizeAudio,
                         googleModels = googleModels
                     )
                     is TranscriberUiState.Loading -> LoadingContent(state.progressMessage)
-                    is TranscriberUiState.Streaming -> StreamingContent(state.partialText, state.isRefining, onCopyToClipboard)
-                    is TranscriberUiState.Success -> SuccessContent(state.text, state.engineMode, state.modelName, onCopyToClipboard)
+                    is TranscriberUiState.Streaming -> StreamingContent(state.partialText, state.isRefining, state.isSummary, onCopyToClipboard)
+                    is TranscriberUiState.Success -> SuccessContent(
+                        text = state.text,
+                        summary = state.summary,
+                        isSummarizing = state.isSummarizing,
+                        isSummaryOnly = state.isSummaryOnly,
+                        engineMode = state.engineMode,
+                        modelName = state.modelName,
+                        dbItemId = state.dbItemId,
+                        onCopy = onCopyToClipboard,
+                        onSummarizeText = onSummarizeText
+                    )
                     is TranscriberUiState.Error -> ErrorContent(
                         msg = state.message,
                         onRetry = { onEngineChange(currentEngine) }
@@ -232,6 +246,7 @@ fun SetupContent(
     onCloudModelChange: (String) -> Unit,
     onLocalModelChange: (String) -> Unit,
     onStart: () -> Unit,
+    onStartSummarizeAudio: () -> Unit = {},
     googleModels: List<Pair<String, String>> = emptyList()
 ) {
     var langExpanded by remember { mutableStateOf(false) }
@@ -535,6 +550,17 @@ fun SetupContent(
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.btn_start))
         }
+
+        OutlinedButton(
+            onClick = onStartSummarizeAudio,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = RoundedCornerShape(14.dp),
+            enabled = isStartEnabled
+        ) {
+            Icon(Icons.Default.AutoAwesome, null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(R.string.btn_summarize_audio))
+        }
     }
 }
 
@@ -558,7 +584,21 @@ fun LoadingContent(progressMessage: String = "") {
 }
 
 @Composable
-fun SuccessContent(text: String, engineMode: String?, modelName: String?, onCopy: (String) -> Unit) {
+fun SuccessContent(
+    text: String,
+    summary: String?,
+    isSummarizing: Boolean,
+    isSummaryOnly: Boolean,
+    engineMode: String?,
+    modelName: String?,
+    dbItemId: Int?,
+    onCopy: (String) -> Unit,
+    onSummarizeText: (String, Int?) -> Unit
+) {
+    var selectedTab by remember(isSummaryOnly, summary) {
+        mutableIntStateOf(if (isSummaryOnly || (summary != null && text.isBlank())) 1 else 0)
+    }
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         if (engineMode != null && modelName != null) {
             Surface(
@@ -567,7 +607,7 @@ fun SuccessContent(text: String, engineMode: String?, modelName: String?, onCopy
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    text = "Mode: $engineMode | Model: $modelName",
+                    text = stringResource(R.string.mode_model_info, engineMode, modelName),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
@@ -575,25 +615,126 @@ fun SuccessContent(text: String, engineMode: String?, modelName: String?, onCopy
                 )
             }
         }
-        Box(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
-            Text(text, style = MaterialTheme.typography.bodyMedium)
+
+        if (!isSummaryOnly) {
+            TabRow(
+                selectedTabIndex = selectedTab,
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                contentColor = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clip(RoundedCornerShape(12.dp))
+            ) {
+                Tab(
+                    selected = selectedTab == 0,
+                    onClick = { selectedTab = 0 },
+                    text = { Text(stringResource(R.string.tab_transcription), fontWeight = FontWeight.Bold) }
+                )
+                Tab(
+                    selected = selectedTab == 1,
+                    onClick = {
+                        selectedTab = 1
+                        if (summary == null && !isSummarizing) {
+                            onSummarizeText(text, dbItemId)
+                        }
+                    },
+                    text = {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(stringResource(R.string.tab_summary), fontWeight = FontWeight.Bold)
+                            if (isSummarizing) {
+                                CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 2.dp)
+                            }
+                        }
+                    }
+                )
+            }
         }
-        Button(onClick = { onCopy(text) }, modifier = Modifier.fillMaxWidth()) {
-            Icon(Icons.Default.ContentCopy, null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(R.string.btn_copy))
+
+        if (selectedTab == 0 && !isSummaryOnly) {
+            // Scheda Trascrizione
+            Box(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
+                Text(parseMarkdown(text), style = MaterialTheme.typography.bodyMedium)
+            }
+            Button(onClick = { onCopy(text) }, modifier = Modifier.fillMaxWidth()) {
+                Icon(Icons.Default.ContentCopy, null)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.btn_copy_transcription))
+            }
+
+            if (summary == null) {
+                OutlinedButton(
+                    onClick = {
+                        selectedTab = 1
+                        onSummarizeText(text, dbItemId)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled = !isSummarizing
+                ) {
+                    Icon(Icons.Default.AutoAwesome, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.btn_summarize_text))
+                }
+            }
+        } else {
+            // Scheda Riassunto
+            if (isSummarizing) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 280.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(modifier = Modifier.size(36.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Text(stringResource(R.string.status_summarizing), style = MaterialTheme.typography.bodyMedium)
+                    if (!summary.isNullOrBlank()) {
+                        Spacer(Modifier.height(8.dp))
+                        Box(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
+                            Text(parseMarkdown(summary, 12.sp), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        }
+                    }
+                }
+            } else if (!summary.isNullOrBlank()) {
+                Box(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
+                    Text(parseMarkdown(summary), style = MaterialTheme.typography.bodyMedium)
+                }
+                Button(onClick = { onCopy(summary) }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Default.ContentCopy, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.btn_copy_summary))
+                }
+            } else {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Text(stringResource(R.string.btn_summarize_text), style = MaterialTheme.typography.bodyMedium)
+                    Button(
+                        onClick = { onSummarizeText(text, dbItemId) },
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.AutoAwesome, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.btn_summarize_text))
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
-fun StreamingContent(text: String, isRefining: Boolean, onCopy: (String) -> Unit) {
+fun StreamingContent(text: String, isRefining: Boolean, isSummary: Boolean = false, onCopy: (String) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (isRefining) {
+        val statusText = when {
+            isSummary -> stringResource(R.string.status_summarizing)
+            isRefining -> stringResource(R.string.status_refining)
+            else -> null
+        }
+        if (statusText != null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                 Text(
-                    stringResource(R.string.status_refining),
+                    statusText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.Medium
@@ -601,7 +742,7 @@ fun StreamingContent(text: String, isRefining: Boolean, onCopy: (String) -> Unit
             }
         }
         Box(modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState())) {
-            Text(text, style = MaterialTheme.typography.bodyMedium)
+            Text(parseMarkdown(text), style = MaterialTheme.typography.bodyMedium)
         }
         Button(onClick = { onCopy(text) }, modifier = Modifier.fillMaxWidth()) {
             Icon(Icons.Default.ContentCopy, null)
