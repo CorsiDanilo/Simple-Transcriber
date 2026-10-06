@@ -50,8 +50,8 @@ fun HistoryScreen(
     var searchQuery by remember { mutableStateOf("") }
     var isSearchActive by remember { mutableStateOf(false) }
 
-    // Selection mode state
-    var selectedIds by remember { mutableStateOf(setOf<Int>()) }
+    // Selection mode state (maintains user selection order)
+    var selectedIds by remember { mutableStateOf(emptyList<Int>()) }
     val isSelectionMode = selectedIds.isNotEmpty()
 
     // Map to track whether summary or transcription is selected per item
@@ -107,8 +107,8 @@ fun HistoryScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        onDeleteItems(selectedIds)
-                        selectedIds = emptySet()
+                        onDeleteItems(selectedIds.toSet())
+                        selectedIds = emptyList()
                         showBulkDeleteConfirm = false
                     }
                 ) {
@@ -130,24 +130,25 @@ fun HistoryScreen(
                 TopAppBar(
                     title = { Text(stringResource(R.string.selected_count, selectedIds.size), fontWeight = FontWeight.Bold) },
                     navigationIcon = {
-                        IconButton(onClick = { selectedIds = emptySet() }) {
+                        IconButton(onClick = { selectedIds = emptyList() }) {
                             Icon(Icons.Default.Close, contentDescription = stringResource(R.string.content_desc_clear_selection))
                         }
                     },
                     actions = {
                         // Select All
                         IconButton(onClick = {
-                            selectedIds = filteredItems.map { it.id }.toSet()
+                            selectedIds = filteredItems.map { it.id }
                         }) {
                             Icon(Icons.Default.SelectAll, contentDescription = stringResource(R.string.content_desc_select_all))
                         }
-                        // Copy selected to clipboard
+                        // Copy selected to clipboard (preserving selection order)
                         IconButton(onClick = {
-                            val combined = items
-                                .filter { it.id in selectedIds }
+                            val itemMap = items.associateBy { it.id }
+                            val combined = selectedIds
+                                .mapNotNull { itemMap[it] }
                                 .joinToString("\n\n") { getDisplayTextForItem(it) }
                             onCopyToClipboard(combined)
-                            selectedIds = emptySet()
+                            selectedIds = emptyList()
                         }) {
                             Icon(Icons.Default.ContentCopy, contentDescription = stringResource(R.string.content_desc_copy_selected))
                         }
@@ -221,7 +222,7 @@ fun HistoryScreen(
                         },
                         onLongClick = {
                             if (!isSelectionMode) {
-                                selectedIds = setOf(item.id)
+                                selectedIds = listOf(item.id)
                             }
                         }
                     )

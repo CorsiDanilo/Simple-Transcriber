@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.5.1] - 2026-10-06
+### Fixed
+- **History Multi-Selection Copy Order**: Preserved user selection order when copying multiple selected items from the history screen to the clipboard.
+
 ## [1.5.0] - 2026-09-10
 ### Added
 - **AI Audio & Text Summarization**:
